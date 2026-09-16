@@ -1,0 +1,1836 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sistema de Gestión de Órdenes de Trabajo y Servicio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F1E7;
+    --surface:#FFFFFF;
+    --surface-2:#ECE4D0;
+    --surface-3:#E2D7BC;
+    --border:#DBCFAE;
+    --ink:#211C13;
+    --ink-muted:#6E6248;
+    --ink-faint:#9C9074;
+    --accent:#B5640A;
+    --accent-strong:#8F4E08;
+    --accent-soft:#F1DDBB;
+    --accent-2:#2E5C8A;
+    --accent-2-soft:#DDE7F0;
+    --good:#276B45;
+    --good-bg:#DFF0E4;
+    --warn:#95600A;
+    --warn-bg:#FBEED2;
+    --crit:#A3382A;
+    --crit-bg:#F8E1DC;
+    --shadow: 0 1px 2px rgba(33,28,19,0.06), 0 4px 14px rgba(33,28,19,0.06);
+    --font-display:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+    --font-body:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161209;
+      --surface:#1F1A10;
+      --surface-2:#2A2313;
+      --surface-3:#382D16;
+      --border:#453816;
+      --ink:#F2EBDA;
+      --ink-muted:#B7A985;
+      --ink-faint:#847858;
+      --accent:#E29A3E;
+      --accent-strong:#F0B15E;
+      --accent-soft:#3A2C10;
+      --accent-2:#7FAAD6;
+      --accent-2-soft:#1E2C3A;
+      --good:#5FBE87;
+      --good-bg:#173523;
+      --warn:#E0AC49;
+      --warn-bg:#3A2C0C;
+      --crit:#E8897A;
+      --crit-bg:#3B1E17;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161209;
+    --surface:#1F1A10;
+    --surface-2:#2A2313;
+    --surface-3:#382D16;
+    --border:#453816;
+    --ink:#F2EBDA;
+    --ink-muted:#B7A985;
+    --ink-faint:#847858;
+    --accent:#E29A3E;
+    --accent-strong:#F0B15E;
+    --accent-soft:#3A2C10;
+    --accent-2:#7FAAD6;
+    --accent-2-soft:#1E2C3A;
+    --good:#5FBE87;
+    --good-bg:#173523;
+    --warn:#E0AC49;
+    --warn-bg:#3A2C0C;
+    --crit:#E8897A;
+    --crit-bg:#3B1E17;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    padding-inline:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display); text-wrap:balance; margin:0;}
+  .mono{font-family:var(--font-mono);}
+  button{font-family:inherit;}
+
+  /* ---------- shell ---------- */
+  .wrap{max-width:1180px; margin:0 auto; padding-inline:20px;}
+  header.topbar{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    box-shadow:var(--shadow);
+  }
+  .topbar-inner{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding-block:12px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .brand-mark{
+    width:36px; height:36px; border-radius:8px; flex:none;
+    background:linear-gradient(155deg, var(--accent), var(--accent-strong));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .brand-mark svg{width:20px; height:20px;}
+  .brand-text h1{font-size:17px; font-weight:700; letter-spacing:-0.01em; line-height:1.1;}
+  .brand-text p{margin:2px 0 0; font-size:11.5px; color:var(--ink-muted); letter-spacing:0.02em;}
+
+  .who{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .who select, .who input{
+    font-family:var(--font-body); font-size:12.5px; padding:7px 9px;
+    border:1px solid var(--border); border-radius:7px; background:var(--surface-2); color:var(--ink);
+  }
+  .who input{width:140px;}
+  .who #nameSelect{max-width:190px;}
+  .role-chip{
+    font-size:10.5px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    padding:4px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent-strong);
+    white-space:nowrap;
+  }
+
+  nav.tabs{
+    display:flex; gap:6px; overflow-x:auto; padding-block:8px;
+    border-top:1px solid var(--border);
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:none; border:1px solid transparent; background:transparent; color:var(--ink-muted);
+    font-size:13px; font-weight:600; padding:8px 13px; border-radius:8px; cursor:pointer;
+    white-space:nowrap; transition:background .15s, color .15s;
+  }
+  nav.tabs button:hover{background:var(--surface-2);}
+  nav.tabs button.active{background:var(--ink); color:var(--bg);}
+  :root[data-theme="dark"] nav.tabs button.active{background:var(--accent); color:#1B1204;}
+
+  main{padding-block:22px 60px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .banner{
+    display:flex; gap:10px; align-items:flex-start; padding:11px 14px; border-radius:9px;
+    background:var(--warn-bg); color:var(--warn); font-size:12.5px; margin-bottom:18px; border:1px solid transparent;
+  }
+  .banner[hidden]{display:none;}
+  .banner strong{color:inherit;}
+
+  section.block{margin-bottom:30px;}
+  .block-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap;}
+  .block-head h2{font-size:15px; font-weight:700;}
+  .block-head .sub{font-size:12px; color:var(--ink-faint);}
+
+  /* ---------- kpi cards ---------- */
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+  .kpi{
+    background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:14px 15px;
+    box-shadow:var(--shadow);
+  }
+  .kpi .lbl{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-faint); font-weight:600;}
+  .kpi .val{font-family:var(--font-mono); font-size:26px; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums;}
+  .kpi .val small{font-size:13px; font-weight:500; color:var(--ink-muted);}
+  .kpi .delta{margin-top:4px; font-size:11.5px; color:var(--ink-faint);}
+
+  /* ---------- charts ---------- */
+  .chart-grid{display:grid; grid-template-columns:1.15fr 1fr; gap:14px;}
+  @media (max-width:820px){ .chart-grid{grid-template-columns:1fr;} }
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+    box-shadow:var(--shadow);
+  }
+  .card h3{font-size:12.5px; font-weight:700; margin-bottom:2px;}
+  .card .sub{font-size:11px; color:var(--ink-faint); margin-bottom:12px;}
+  .barrow{display:flex; align-items:center; gap:10px; padding-block:5px;}
+  .barrow .lbl{width:88px; flex:none; font-size:11.5px; line-height:1.25; color:var(--ink-muted); font-weight:600; overflow-wrap:anywhere;}
+  .barrow .track{flex:1; background:var(--surface-2); border-radius:5px; height:16px; position:relative; overflow:hidden;}
+  .barrow .fill{height:100%; border-radius:5px; display:flex; align-items:center;}
+  .barrow .fill.acc1{background:linear-gradient(90deg, var(--accent-soft), var(--accent));}
+  .barrow .fill.acc2{background:linear-gradient(90deg, var(--accent-2-soft), var(--accent-2));}
+  .barrow .amt{width:70px; flex:none; text-align:right; font-family:var(--font-mono); font-size:12px; font-variant-numeric:tabular-nums;}
+
+  .trend-svg{width:100%; height:150px; display:block;}
+  .trend-svg text{font-family:var(--font-mono); fill:var(--ink-faint);}
+
+  /* ---------- forms ---------- */
+  .form-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); max-width:640px;}
+  .field-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:560px){ .field-grid{grid-template-columns:1fr;} }
+  .field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:11.5px; font-weight:600; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.03em;}
+  .field input, .field select, .field textarea{
+    font-family:var(--font-body); font-size:14px; padding:9px 11px; border-radius:8px;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--ink); width:100%;
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .btn{
+    display:inline-flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; cursor:pointer;
+    border-radius:8px; padding:10px 16px; border:1px solid transparent; transition:filter .15s, transform .05s;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--accent); color:#fff;}
+  :root[data-theme="dark"] .btn-primary{color:#1B1204;}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-ghost{background:var(--surface-2); color:var(--ink); border-color:var(--border);}
+  .btn-ghost:hover{background:var(--surface-3);}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .hint{font-size:11.5px; color:var(--ink-faint); margin-top:4px;}
+  .note-locked{
+    font-size:12.5px; color:var(--ink-faint); background:var(--surface-2); border:1px dashed var(--border);
+    border-radius:9px; padding:12px 14px;
+  }
+
+  /* ---------- tables ---------- */
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .filters select, .filters input{
+    font-size:12.5px; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
+  }
+  .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow);}
+  table{border-collapse:collapse; width:100%; min-width:720px;}
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-faint);
+    font-weight:700; padding:10px 12px; border-bottom:1px solid var(--border); background:var(--surface-2);
+    position:sticky; top:0;
+  }
+  td{padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.mono, .id-cell{font-family:var(--font-mono); font-size:12px; color:var(--ink-muted);}
+  .pill{
+    display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px;
+    border-radius:999px; white-space:nowrap;
+  }
+  .pill::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor;}
+  .pill.abierta{background:var(--crit-bg); color:var(--crit);}
+  .pill.proceso{background:var(--warn-bg); color:var(--warn);}
+  .pill.cerrada{background:var(--good-bg); color:var(--good);}
+  .pill.prio-alta{background:var(--crit-bg); color:var(--crit);}
+  .pill.prio-media{background:var(--warn-bg); color:var(--warn);}
+  .pill.prio-baja{background:var(--accent-2-soft); color:var(--accent-2);}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .row-actions select{font-size:11.5px; padding:5px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink);}
+  .row-actions button, .btn-sm{font-size:11px; padding:5px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); cursor:pointer; color:var(--ink);}
+  .row-actions button:hover, .btn-sm:hover{background:var(--surface-2);}
+  .empty-state{padding:34px 20px; text-align:center; color:var(--ink-faint); font-size:13px;}
+
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(0); z-index:80;
+    background:var(--ink); color:var(--bg); font-size:13px; padding:10px 18px; border-radius:9px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.25); opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+  }
+  :root[data-theme="dark"] .toast{background:var(--accent); color:#1B1204;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  ::selection{background:var(--accent-soft);}
+  a{color:var(--accent-2);}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important;} }
+
+  /* ---------- gate de acceso (código compartido, no es autenticación real) ---------- */
+  #gateOverlay{
+    position:fixed; inset:0; z-index:999; background:var(--bg); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  #gateOverlay .gate-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:26px 24px; max-width:340px; width:100%; box-shadow:var(--shadow); text-align:center;
+  }
+  #gateOverlay h2{font-size:16px; margin-bottom:6px;}
+  #gateOverlay p{font-size:12.5px; color:var(--ink-muted); margin:0 0 16px;}
+  #gateOverlay input{
+    width:100%; font-family:var(--font-mono); font-size:18px; letter-spacing:0.08em; text-align:center;
+    padding:11px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink);
+    margin-bottom:10px;
+  }
+  #gateOverlay .err{color:var(--crit); font-size:12px; min-height:16px; margin-bottom:8px;}
+  #appRoot{display:none;}
+</style>
+</head>
+<body>
+
+<div id="gateOverlay">
+  <div class="gate-card">
+    <h2>Sistema de Gestión OT y OS</h2>
+    <p>Ingresa el código de acceso del equipo de Mantenimiento (está impreso junto a cada QR).</p>
+    <input type="text" id="gateInput" inputmode="text" autocomplete="off" placeholder="Código" />
+    <div class="err" id="gateErr"></div>
+    <button class="btn btn-primary" id="gateBtn" style="width:100%; justify-content:center;">Entrar</button>
+  </div>
+</div>
+
+<div id="appRoot">
+<header class="topbar">
+  <div class="wrap">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="4.4" stroke="#fff" stroke-width="1.8"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>Gestión OT y OS</h1>
+          <p>Motorreductores Niagara · Recolección de huevos · GAP 1–8</p>
+        </div>
+      </div>
+      <div class="who">
+        <span class="role-chip" id="roleChip">TÉCNICO</span>
+        <select id="roleSelect" aria-label="Rol">
+          <option>Técnico</option>
+          <option>Supervisor</option>
+          <option>Asistente</option>
+          <option>Coordinador</option>
+          <option>Jefe</option>
+        </select>
+        <select id="nameSelect" aria-label="Nombre"></select>
+        <input id="nameInputOther" type="text" placeholder="Escribe tu nombre" aria-label="Tu nombre" style="display:none;" />
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="registrar">Registrar OT</button>
+      <button data-view="gestion">Gestión de OT</button>
+      <button data-view="os" id="tabOS">Órdenes de Servicio</button>
+      <button data-view="activos">Activos y QR</button>
+      <button data-view="historial">Historial</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="connBanner" class="banner" hidden>
+    <span>⚠</span>
+    <span id="connBannerMsg"><strong>Falta completar la configuración de Firebase.</strong> Estás viendo datos de ejemplo; los cambios no se guardarán ni serán visibles para tu equipo hasta pegar la configuración del proyecto de Firebase en el archivo (ver comentario al inicio del script).</span>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="view-dashboard" class="view active">
+    <section class="block">
+      <div class="block-head">
+        <h2>Resumen general</h2>
+        <span class="sub" id="rangeLabel">ene – sep 2026</span>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Distribución de fallas</h2>
+        <span class="sub">Horas de parada acumuladas (histórico + OT registradas)</span>
+      </div>
+      <div class="chart-grid">
+        <div class="card">
+          <h3>Por galpón</h3>
+          <div class="sub">GAP 1 – GAP 8</div>
+          <div id="chartGap"></div>
+        </div>
+        <div class="card">
+          <h3>Por causa raíz</h3>
+          <div class="sub">Clasificación del motivo de falla</div>
+          <div id="chartCausa"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Tendencia mensual</h2>
+        <span class="sub">Horas de parada por mes</span>
+      </div>
+      <div class="card">
+        <div id="chartTrend"></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Exportar</h2>
+        <span class="sub">Descarga el histórico, las OT y las OS como un solo libro Excel</span>
+      </div>
+      <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+        <div style="font-size:12.5px; color:var(--ink-muted); max-width:440px;">
+          El archivo incluye 3 hojas: <strong>Historial de fallas</strong>, <strong>Órdenes de Trabajo (OT)</strong> y <strong>Órdenes de Servicio (OS)</strong>, listas para Gerencia General o para cargarlas en Softcom.
+        </div>
+        <button class="btn btn-primary" id="btnExport">⬇ Exportar a Excel</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- ============ REGISTRAR OT ============ -->
+  <section id="view-registrar" class="view">
+    <div class="block-head">
+      <h2>Registrar Orden de Trabajo (OT)</h2>
+      <span class="sub">Genera una OT por equipo — motor, reductor u otro componente Niagara</span>
+    </div>
+    <form class="form-card" id="formOT">
+      <div class="field-grid">
+        <div class="field">
+          <label for="f_fecha">Fecha</label>
+          <input type="date" id="f_fecha" required />
+        </div>
+        <div class="field">
+          <label for="f_galpon">Galpón</label>
+          <select id="f_galpon" required>
+            <option value="">Selecciona…</option>
+            <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
+            <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f_equipo">Equipo / causa raíz</label>
+          <select id="f_equipo" required>
+            <option value="">Selecciona…</option>
+            <option>Motor eléctrico</option>
+            <option>Reductor</option>
+            <option>Motorreductor</option>
+            <option>Mecanismo (uñas/pines)</option>
+            <option>Eléctrico</option>
+            <option>Proceso/Logística</option>
+            <option value="__otro__">Otro (especificar)</option>
+          </select>
+          <input type="text" id="f_equipo_otro" placeholder="Escribe el equipo o causa" style="display:none; margin-top:8px;" />
+        </div>
+        <div class="field">
+          <label for="f_detalle">Detalle del punto (opcional)</label>
+          <input type="text" id="f_detalle" placeholder="Ej. Fila 3, banda niagara" />
+        </div>
+        <div class="field full">
+          <label for="f_activo">Activo (opcional)</label>
+          <select id="f_activo"><option value="">Sin activo específico del catálogo</option></select>
+          <div class="hint">Si el activo tiene código y QR registrados en "Activos y QR", selecciónalo aquí para que esta OT quede en su historial.</div>
+        </div>
+        <div class="field full">
+          <label for="f_desc">Descripción de la falla</label>
+          <textarea id="f_desc" required placeholder="Ej. Motorreductor dañado, banda niagara fila 3, GAP 5"></textarea>
+        </div>
+        <div class="field full">
+          <label for="f_foto_falla">Foto de la falla (opcional)</label>
+          <input type="file" id="f_foto_falla" accept="image/*" capture="environment" />
+        </div>
+        <div class="field">
+          <label for="f_prioridad">Prioridad</label>
+          <select id="f_prioridad">
+            <option>Media</option><option>Alta</option><option>Baja</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f_tiempo">Tiempo de parada estimado (h)</label>
+          <input type="number" id="f_tiempo" step="0.01" min="0" placeholder="Ej. 0.5" />
+        </div>
+        <div class="field full">
+          <label for="f_tecnico">Reportado por</label>
+          <input type="text" id="f_tecnico" placeholder="Nombre del técnico" />
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit">+ Generar OT</button>
+      <div class="hint">La OT queda en estado <strong>Abierta</strong> y aparece de inmediato en “Gestión de OT” para todo el equipo.</div>
+    </form>
+  </section>
+
+  <!-- ============ GESTION OT ============ -->
+  <section id="view-gestion" class="view">
+    <div class="block-head">
+      <h2>Gestión de Órdenes de Trabajo</h2>
+      <span class="sub" id="gestionCount">—</span>
+    </div>
+    <input type="file" id="hiddenFotoInput" accept="image/*" capture="environment" style="display:none;" />
+    <div class="filters">
+      <select id="filtroGalponOT"><option value="">Todos los galpones</option></select>
+      <select id="filtroEquipoOT"><option value="">Todos los equipos</option></select>
+      <select id="filtroEstadoOT">
+        <option value="">Todos los estados</option>
+        <option>Abierta</option><option>En Proceso</option><option>Cerrada</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>N° OT</th><th>Fecha</th><th>Galpón</th><th>Activo</th><th>Equipo</th><th>Descripción</th>
+          <th>Técnico</th><th>Prioridad</th><th>Tiempo (h)</th><th>Estado</th><th>OS</th><th>Fotos</th>
+        </tr></thead>
+        <tbody id="tbodyOT"><tr><td colspan="12" class="empty-state">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ OS ============ -->
+  <section id="view-os" class="view">
+    <div class="block-head">
+      <h2>Órdenes de Servicio (Softcom)</h2>
+      <span class="sub">Vincula cada OS generada en Softcom a su OT de origen</span>
+    </div>
+    <div id="osLocked" class="note-locked" hidden>
+      Tu rol actual no tiene permiso para registrar Órdenes de Servicio. Esta acción está disponible para <strong>Asistente</strong>, <strong>Coordinador</strong> y <strong>Jefe</strong>.
+    </div>
+    <div id="osContent">
+      <form class="form-card" id="formOS" style="margin-bottom:22px;">
+        <div class="field-grid">
+          <div class="field full">
+            <label for="os_ot">OT de origen (opcional)</label>
+            <select id="os_ot"><option value="">Sin OT vinculada — OS independiente</option></select>
+            <div class="hint">Si esta OS viene de una falla ya registrada como OT aquí, selecciónala para vincularla. Si es una orden de Softcom que no pasó por una OT en este sistema (por ejemplo, ya ejecutada o histórica), déjalo así y completa galpón/equipo.</div>
+          </div>
+          <div class="field">
+            <label for="os_galpon">Galpón</label>
+            <select id="os_galpon" required>
+              <option value="">Selecciona…</option>
+              <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
+              <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="os_equipo">Equipo</label>
+            <select id="os_equipo" required>
+              <option value="">Selecciona…</option>
+              <option>Motor</option>
+              <option>Reductor/Motorreductor</option>
+              <option>Mecanismo (uñas/pines)</option>
+              <option>Eléctrico</option>
+              <option>Proceso/Logística</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="os_numero">N° OS en Softcom</label>
+            <input type="text" id="os_numero" placeholder="Ej. SC-004521" />
+            <div class="hint">Déjalo en blanco si Softcom aún no lo asigna; podrás editarlo después.</div>
+          </div>
+          <div class="field">
+            <label for="os_fecha">Fecha</label>
+            <input type="date" id="os_fecha" required />
+          </div>
+          <div class="field">
+            <label for="os_proveedor">Proveedor / ejecutor</label>
+            <input type="text" id="os_proveedor" placeholder="Ej. Taller externo, almacén interno…" />
+          </div>
+          <div class="field">
+            <label for="os_costo">Costo estimado (S/)</label>
+            <input type="number" id="os_costo" step="0.01" min="0" />
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">+ Registrar OS</button>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>N° OS interno</th><th>N° Softcom</th><th>Fecha</th><th>OT vinculada</th><th>Galpón</th>
+          <th>Proveedor</th><th>Costo (S/)</th><th>Estado</th><th></th>
+        </tr></thead>
+        <tbody id="tbodyOS"><tr><td colspan="9" class="empty-state">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ HISTORIAL ============ -->
+  <section id="view-historial" class="view">
+    <div class="block-head">
+      <h2>Historial de fallas (ene – sep 2026)</h2>
+      <span class="sub" id="histCount">—</span>
+    </div>
+    <div class="filters">
+      <select id="filtroGalponHist"><option value="">Todos los galpones</option></select>
+      <select id="filtroCausaHist"><option value="">Todas las causas</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Turno</th><th>Inicio</th><th>Fin</th><th>Tiempo (h)</th>
+          <th>Galpón</th><th>Causa raíz</th><th>Motivo</th><th>Operador</th>
+        </tr></thead>
+        <tbody id="tbodyHist"><tr><td colspan="9" class="empty-state">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ ACTIVOS Y QR ============ -->
+  <section id="view-activos" class="view">
+    <div class="block-head">
+      <h2>Activos menores y códigos QR</h2>
+      <span class="sub" id="activosCount">—</span>
+    </div>
+    <div id="activosLocked" class="note-locked" hidden>
+      Tu rol actual solo puede consultar el catálogo de activos. Dar de alta un activo nuevo está disponible para <strong>Asistente</strong>, <strong>Coordinador</strong> y <strong>Jefe</strong>.
+    </div>
+    <div id="activosFormWrap">
+      <form class="form-card" id="formActivo" style="margin-bottom:22px;">
+        <div class="field-grid">
+          <div class="field">
+            <label for="a_codigo">Código del activo</label>
+            <input type="text" id="a_codigo" placeholder="Ej. GAP5-MR-F3" required />
+          </div>
+          <div class="field">
+            <label for="a_nombre">Nombre</label>
+            <input type="text" id="a_nombre" placeholder="Ej. Motorreductor fila 3" required />
+          </div>
+          <div class="field">
+            <label for="a_galpon">Galpón</label>
+            <select id="a_galpon" required>
+              <option value="">Selecciona…</option>
+              <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
+              <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="a_ubicacion">Ubicación / posición</label>
+            <input type="text" id="a_ubicacion" placeholder="Ej. Banda niagara, fila 3" />
+          </div>
+        </div>
+        <details style="margin:6px 0 14px;">
+          <summary style="cursor:pointer; font-size:12.5px; color:var(--ink-muted);">Datos técnicos de placa (opcional — marca, potencia, serie…)</summary>
+          <div class="field-grid" style="margin-top:12px;">
+            <div class="field">
+              <label for="a_marca">Marca</label>
+              <input type="text" id="a_marca" placeholder="Ej. Varvel" />
+            </div>
+            <div class="field">
+              <label for="a_tipo">Tipo / modelo</label>
+              <input type="text" id="a_tipo" placeholder="Ej. JM 80B 4 B5" />
+            </div>
+            <div class="field">
+              <label for="a_numeroSerie">N° de serie</label>
+              <input type="text" id="a_numeroSerie" placeholder="Ej. J0815648658" />
+            </div>
+            <div class="field">
+              <label for="a_pesoKg">Peso (kg)</label>
+              <input type="text" id="a_pesoKg" placeholder="Ej. 9.2" />
+            </div>
+            <div class="field">
+              <label for="a_claseAislamiento">Clase de aislamiento</label>
+              <input type="text" id="a_claseAislamiento" placeholder="Ej. F" />
+            </div>
+            <div class="field">
+              <label for="a_ip">Grado IP</label>
+              <input type="text" id="a_ip" placeholder="Ej. 55" />
+            </div>
+            <div class="field">
+              <label for="a_servicio">Servicio</label>
+              <input type="text" id="a_servicio" placeholder="Ej. S3 75%" />
+            </div>
+            <div class="field">
+              <label for="a_pn">PN</label>
+              <input type="text" id="a_pn" placeholder="Ej. 91S03665" />
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px;">
+            <label for="a_especificaciones">Especificaciones eléctricas (voltaje, Hz, amperaje, kW, RPM…)</label>
+            <textarea id="a_especificaciones" rows="3" placeholder="Ej. 230/400V, 50Hz, 3.44/1.98A, 0.75kW, 1390rpm, cos φ 0.76, efic. 72.1%&#10;265/460V, 60Hz, 3.44/1.98A, 0.86kW, 1665rpm, cos φ 0.7, efic. 78%"></textarea>
+          </div>
+        </details>
+        <button class="btn btn-primary" type="submit">+ Dar de alta activo</button>
+        <div class="hint">Cada activo dado de alta aquí aparece abajo con su código QR listo para descargar.</div>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Código</th><th>Nombre</th><th>Galpón</th><th>Ubicación</th><th>OT totales</th><th>OT abiertas</th><th>Horas parada</th><th id="thCostoActivo">Costo OS (S/)</th><th></th>
+        </tr></thead>
+        <tbody id="tbodyActivos"><tr><td colspan="9" class="empty-state">Aún no hay activos dados de alta.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ FICHA DE ACTIVO (abre desde el QR) ============ -->
+  <section id="view-ficha" class="view">
+    <div class="block-head">
+      <h2 id="fichaTitulo">Ficha de activo</h2>
+      <button class="btn btn-ghost" id="btnFichaVolver">← Ver sistema completo</button>
+    </div>
+    <div id="fichaNoEncontrado" class="note-locked" hidden>
+      No encontramos este activo en el catálogo. Puede que el código del QR ya no exista o el catálogo se haya actualizado.
+    </div>
+    <div id="fichaContenido">
+      <div class="kpi-grid" id="fichaKpis" style="margin-bottom:22px;"></div>
+      <section class="block" id="fichaPlacaBlock" hidden>
+        <div class="block-head"><h2>Ficha técnica (placa)</h2><span class="sub">Datos de fábrica del equipo</span></div>
+        <div id="fichaPlacaContenido"></div>
+      </section>
+      <section class="block">
+        <div class="block-head"><h2>Trabajos realizados (OT)</h2><span class="sub">Últimos meses, más reciente primero</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>N° OT</th><th>Fecha</th><th>Descripción</th><th>Técnico</th><th>Estado</th><th>Fotos</th></tr></thead>
+            <tbody id="tbodyFichaOT"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="block" id="fichaOSBlock">
+        <div class="block-head"><h2>Órdenes de Servicio y costos</h2><span class="sub">Para evaluar reparación vs. baja del activo</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>N° OS</th><th>Fecha</th><th>Proveedor</th><th>Costo (S/)</th><th>Estado</th></tr></thead>
+            <tbody id="tbodyFichaOS"></tbody>
+          </table>
+        </div>
+      </section>
+      <button class="btn btn-primary" id="btnFichaNuevaOT">+ Registrar nueva OT para este activo</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+</div><!-- /#appRoot -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* =======================================================================
+     CONFIGURACIÓN — completar antes de publicar
+     =======================================================================
+     1) Ve a https://console.firebase.google.com , crea un proyecto gratis.
+     2) Activa "Firestore Database" (modo producción) y "Storage".
+     3) En Configuración del proyecto > Tus apps > Web (</>), registra una
+        app y copia aquí el objeto de configuración que te muestra.
+     4) Cambia ACCESS_PIN por el código que le vas a dar a tu equipo (no es
+        una contraseña real de un solo uso por persona — es un código
+        compartido para que no cualquiera que encuentre el enlace entre).
+     ======================================================================= */
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDo8dh2rsURXiWRfujLpkhh7x3LXaQEZZ8",
+    authDomain: "gestion-de-ot-y-os.firebaseapp.com",
+    projectId: "gestion-de-ot-y-os",
+    storageBucket: "gestion-de-ot-y-os.firebasestorage.app",
+    messagingSenderId: "789716816100",
+    appId: "1:789716816100:web:e05f98af02b66b382e9cf1"
+  };
+  var ACCESS_PIN = "AVIVEL2026";
+  var FIREBASE_LISTO = FIREBASE_CONFIG.apiKey !== "PEGAR_AQUI";
+
+  /* ---------------- constants ---------------- */
+  var GAPS = ["GAP 1","GAP 2","GAP 3","GAP 4","GAP 5","GAP 6","GAP 7","GAP 8"];
+  var CAUSAS = ["Motor eléctrico","Reductor","Motorreductor","Mecanismo (uñas/pines)","Eléctrico","Proceso/Logística","Otro","Indeterminado (revisar)"];
+  var ROLES = ["Técnico","Supervisor","Asistente","Coordinador","Jefe"];
+  /* Roles con una sola persona a cargo: al cambiar el selector de Rol, el
+     selector de Nombre salta directo a esa persona. Supervisor y Técnico
+     tienen varias personas, así que ahí no se fuerza un nombre por defecto. */
+  var DEFAULT_NAME_BY_ROLE = {
+    "Jefe": "Jahir Manzo Pretel",
+    "Asistente": "Roberto Napan",
+    "Coordinador": "Rogger Gamboa"
+  };
+  /* Roster de Mantenimiento Industrial (HC actualizado 16-09-26). Solo nombre,
+     puesto y rol sugerido — DNI y sueldo se excluyen a propósito porque esta
+     base es compartida con todo el equipo que abre el enlace. */
+  var PERSONAL = [
+    {nombre:"Jahir Manzo Pretel", puesto:"Jefe de Mantenimiento Corporativo", rol:"Jefe"},
+    {nombre:"Rogger Gamboa", puesto:"Coordinador de Mantenimiento", rol:"Coordinador"},
+    {nombre:"Roberto Napan", puesto:"Asistente de Mantenimiento Industrial", rol:"Asistente"},
+    {nombre:"Alejandro Florián", puesto:"Supervisor de Mantenimiento", rol:"Supervisor"},
+    {nombre:"Gabriel Alfaro", puesto:"Supervisor de Mantenimiento", rol:"Supervisor"},
+    {nombre:"Misael Chancasanampa", puesto:"Supervisor de Mantenimiento", rol:"Supervisor"},
+    {nombre:"Carlos Paucar", puesto:"Técnico Electricista Líder", rol:"Técnico"},
+    {nombre:"Kenjo Huarachi", puesto:"Técnico Mecánico · Galpones Automáticos", rol:"Técnico"},
+    {nombre:"Julio Quispe", puesto:"Técnico Mecánico · GAPs Automáticos", rol:"Técnico"},
+    {nombre:"Roberto Condor", puesto:"Técnico Mecánico · GAPs Automáticos", rol:"Técnico"},
+    {nombre:"Joel Catunta", puesto:"Técnico Electricista · GAPs Automáticos", rol:"Técnico"},
+    {nombre:"José Utani", puesto:"Técnico Mecánico · Clasificadora", rol:"Técnico"},
+    {nombre:"William Medina", puesto:"Técnico Electricista · Clasificadora", rol:"Técnico"},
+    {nombre:"Jhoslyn Heredia", puesto:"Técnico Electricista · Clasificadora", rol:"Técnico"},
+    {nombre:"Daniel Gutiérrez", puesto:"Técnico Mecánico · Clasificadora", rol:"Técnico"},
+    {nombre:"Juan Cuya", puesto:"Técnico Electricista · Clasificadora", rol:"Técnico"},
+    {nombre:"Felix Caico", puesto:"Técnico Mecánico · Clasificadora", rol:"Técnico"},
+    {nombre:"Dennis Ortiz", puesto:"Técnico Mecánico · Molino", rol:"Técnico"},
+    {nombre:"Stef Ordoñez", puesto:"Técnico Electricista · Molino", rol:"Técnico"},
+    {nombre:"Jorge Salvador", puesto:"Pintor", rol:"Técnico"},
+    {nombre:"Jeffrey Litano", puesto:"Auxiliar de Mantenimiento", rol:"Técnico"},
+    {nombre:"Iván Castillo", puesto:"Auxiliar de Mantenimiento (Pintor)", rol:"Técnico"},
+    {nombre:"Richard Medina", puesto:"Auxiliar de Mantenimiento", rol:"Técnico"}
+  ];
+  var PERMS = {
+    "Técnico":     { createOT:true, manageOT:"own", createOS:false, manageOS:false, exportExcel:false, seeOSTab:false, manageActivos:false, seeCostos:false },
+    "Supervisor":  { createOT:true, manageOT:"all", createOS:false, manageOS:false, exportExcel:true,  seeOSTab:true,  manageActivos:false, seeCostos:true  },
+    "Asistente":   { createOT:true, manageOT:"all", createOS:true,  manageOS:true,  exportExcel:true,  seeOSTab:true,  manageActivos:true,  seeCostos:true  },
+    "Coordinador": { createOT:true, manageOT:"all", createOS:true,  manageOS:true,  exportExcel:true,  seeOSTab:true,  manageActivos:true,  seeCostos:true  },
+    "Jefe":        { createOT:true, manageOT:"all", createOS:true,  manageOS:true,  exportExcel:true,  seeOSTab:true,  manageActivos:true,  seeCostos:true  }
+  };
+
+  /* ---------------- state ---------------- */
+  var state = {
+    role: "Jefe",
+    nombre: "Jahir Manzo Pretel",
+    db: null,
+    storage: null,
+    connected: false,
+    fallas: [],
+    ot: [],
+    os: [],
+    activos: [],
+    fichaCodigo: null
+  };
+  var pendingFotoOtId = null;
+
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function uid(){
+    var d = new Date();
+    var stamp = d.getFullYear().toString().slice(2) +
+      String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
+    var rand = Array.from(crypto.getRandomValues(new Uint8Array(3)))
+      .map(function(b){ return b.toString(36); }).join("").toUpperCase().slice(0,4);
+    return stamp + "-" + rand;
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function fmtH(n){ return (Math.round((n||0)*100)/100).toFixed(2); }
+  /* Las fotos ahora se guardan en Firebase Storage y el campo fotoFallaId/
+     fotoCierreId de la OT pasa a contener la URL pública completa de la
+     imagen (ya no un id interno) — por eso blobSrc es simplemente la
+     identidad: recibe esa URL y la devuelve tal cual. */
+  function blobSrc(urlOrId){ return urlOrId || null; }
+  function uploadPhoto(file){
+    if(!file || !state.storage) return Promise.resolve(null);
+    var nombre = "fotos/" + Date.now() + "-" + Math.random().toString(36).slice(2,8) + "-" + (file.name||"foto.jpg").replace(/[^a-zA-Z0-9_.-]/g,"_");
+    var ref = state.storage.ref().child(nombre);
+    return ref.put(file).then(function(snap){ return snap.ref.getDownloadURL(); }).catch(function(){
+      toast("No se pudo subir la foto (se guardó la OT sin ella)");
+      return null;
+    });
+  }
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._tm);
+    toast._tm = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+  }
+  function statusPillClass(s){
+    if(s==="Abierta") return "abierta";
+    if(s==="En Proceso") return "proceso";
+    return "cerrada";
+  }
+  function prioPillClass(p){
+    if(p==="Alta") return "prio-alta";
+    if(p==="Baja") return "prio-baja";
+    return "prio-media";
+  }
+
+  /* ---------------- persisted viewer prefs (per-browser only) ---------------- */
+  function loadPrefs(){
+    try{
+      var r = localStorage.getItem("bn_role");
+      var n = localStorage.getItem("bn_nombre");
+      if(r && ROLES.indexOf(r)>=0) state.role = r;
+      if(n) state.nombre = n;
+    }catch(e){}
+  }
+  function savePrefs(){
+    try{
+      localStorage.setItem("bn_role", state.role);
+      localStorage.setItem("bn_nombre", state.nombre);
+    }catch(e){}
+  }
+
+  /* ---------------- datos de arranque ---------------- */
+  /* SEED_FALLAS_DEMO: muestra chica que solo se usa en modo local/demo
+     (cuando todavía no se completó FIREBASE_CONFIG arriba) para poder
+     previsualizar la interfaz sin conexión real. */
+  var SEED_FALLAS_DEMO = [
+    {fecha:"2026-01-17",turno:null,horaInicio:"09:50",horaFin:"10:06",tiempoH:0.2667,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - Pin roto Gap 8",operador:null},
+    {fecha:"2026-04-06",turno:null,horaInicio:"10:30",horaFin:"11:40",tiempoH:1.1667,galpon:"GAP 5",categoria:"Mecanismo (uñas/pines)",motivo:"Falla pin - Gap5",operador:null},
+    {fecha:"2026-08-30",turno:null,horaInicio:"12:10",horaFin:"12:28",tiempoH:0.3,galpon:"GAP 6",categoria:"Motorreductor",motivo:"Motorreductor dañado fila 3 del sistema Niagara",operador:null},
+    {fecha:"2026-09-13",turno:null,horaInicio:"12:34",horaFin:"14:15",tiempoH:1.6833,galpon:"GAP 5",categoria:"Motor eléctrico",motivo:"Motor dañado de niagara fila 4",operador:null}
+  ];
+
+  /* SEED_FALLAS_INICIAL: los 40 registros históricos reales (ene-sep 2026),
+     reclasificados por causa raíz. Se siembran UNA sola vez en Firestore,
+     automáticamente, la primera vez que alguien abre la página con
+     Firebase ya configurado y la colección "fallas_historicas" vacía. */
+  var SEED_FALLAS_INICIAL = [
+    {fecha:"2026-09-13",turno:null,horaInicio:"12:34",horaFin:"14:15",tiempoH:1.6833,galpon:"GAP 5",categoria:"Motor eléctrico",motivo:"Motor dañado de niagara fila 4",operador:null},
+    {fecha:"2026-09-10",turno:null,horaInicio:"17:34",horaFin:"17:53",tiempoH:0.3167,galpon:"GAP 5",categoria:"Motorreductor",motivo:"Motorreductor dañado fila 3",operador:null},
+    {fecha:"2026-09-10",turno:null,horaInicio:"16:38",horaFin:"17:34",tiempoH:0.9333,galpon:"GAP 5",categoria:"Motorreductor",motivo:"Motorreductor dañado fila 3",operador:null},
+    {fecha:"2026-09-10",turno:null,horaInicio:"15:47",horaFin:"16:38",tiempoH:0.85,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Base de las uñas dobladas",operador:null},
+    {fecha:"2026-08-30",turno:null,horaInicio:"17:41",horaFin:"18:31",tiempoH:0.8333,galpon:"GAP 6",categoria:"Proceso/Logística",motivo:"Tiempo de retrazo jalado",operador:null},
+    {fecha:"2026-08-30",turno:null,horaInicio:"17:12",horaFin:"17:41",tiempoH:0.4833,galpon:"GAP 6",categoria:"Proceso/Logística",motivo:"Tiempo de retrazo jalado",operador:null},
+    {fecha:"2026-08-30",turno:null,horaInicio:"15:26",horaFin:"15:39",tiempoH:0.2167,galpon:"GAP 1",categoria:"Proceso/Logística",motivo:"Tiempo de retrazo jalado",operador:null},
+    {fecha:"2026-08-30",turno:null,horaInicio:"12:10",horaFin:"12:28",tiempoH:0.3,galpon:"GAP 6",categoria:"Motorreductor",motivo:"Motorreductor dañado fila 3 del sistema Niagara",operador:null},
+    {fecha:"2026-08-23",turno:null,horaInicio:"11:37",horaFin:"12:04",tiempoH:0.45,galpon:"GAP 1",categoria:"Proceso/Logística",motivo:"Ingreso del GAP1 lote 233",operador:null},
+    {fecha:"2026-08-23",turno:null,horaInicio:"05:54",horaFin:"06:19",tiempoH:0.4167,galpon:"GAP 2",categoria:"Proceso/Logística",motivo:"Ingreso del GAP2 lote 238",operador:null},
+    {fecha:"2026-08-16",turno:null,horaInicio:"15:24",horaFin:"15:52",tiempoH:0.4667,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto",operador:null},
+    {fecha:"2026-08-14",turno:null,horaInicio:"08:58",horaFin:"09:21",tiempoH:0.3833,galpon:"GAP 7",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto del sistema de niagara",operador:null},
+    {fecha:"2026-08-12",turno:null,horaInicio:"09:28",horaFin:"09:37",tiempoH:0.15,galpon:"GAP 2",categoria:"Eléctrico",motivo:"Fusible abierto del tablero principal anaconda 2",operador:null},
+    {fecha:"2026-08-07",turno:null,horaInicio:"15:20",horaFin:"15:28",tiempoH:0.1333,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Uñas salidas del niagara GAP8",operador:null},
+    {fecha:"2026-08-06",turno:null,horaInicio:"15:22",horaFin:"15:43",tiempoH:0.35,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto GAP8",operador:null},
+    {fecha:"2026-08-05",turno:null,horaInicio:"15:36",horaFin:"15:52",tiempoH:0.2667,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto GAP8",operador:null},
+    {fecha:"2026-08-04",turno:null,horaInicio:"16:05",horaFin:"16:20",tiempoH:0.25,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto GAP8",operador:null},
+    {fecha:"2026-08-02",turno:null,horaInicio:"15:30",horaFin:"15:45",tiempoH:0.25,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Atascamiento de uñas GAP8",operador:null},
+    {fecha:"2026-07-31",turno:"T02",horaInicio:"15:40",horaFin:"15:55",tiempoH:0.25,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto GAP8",operador:"JESUS"},
+    {fecha:"2026-07-25",turno:"T01",horaInicio:"05:29",horaFin:"05:54",tiempoH:0.4167,galpon:"GAP 3",categoria:"Mecanismo (uñas/pines)",motivo:"Uñas fuera de posición",operador:"JESUS"},
+    {fecha:"2026-07-23",turno:"T01",horaInicio:"05:27",horaFin:"05:51",tiempoH:0.4,galpon:"GAP 3",categoria:"Mecanismo (uñas/pines)",motivo:"Uñas de niagara salido",operador:"JESUS"},
+    {fecha:"2026-06-17",turno:null,horaInicio:"11:01",horaFin:"11:15",tiempoH:0.2333,galpon:"GAP 5",categoria:"Indeterminado (revisar)",motivo:"Problema con niagara en GAP 5",operador:null},
+    {fecha:"2026-06-11",turno:null,horaInicio:"12:33",horaFin:"12:50",tiempoH:0.2833,galpon:"GAP 5",categoria:"Mecanismo (uñas/pines)",motivo:"Pin roto GAP 5 (Lote 234)",operador:null},
+    {fecha:"2026-05-17",turno:null,horaInicio:"05:10",horaFin:"05:21",tiempoH:0.1833,galpon:"GAP 4",categoria:"Indeterminado (revisar)",motivo:"BE - Grupo 4. Lote 227",operador:null},
+    {fecha:"2026-05-14",turno:null,horaInicio:"17:23",horaFin:"18:30",tiempoH:1.1167,galpon:"GAP 4",categoria:"Proceso/Logística",motivo:"Se jala para modulos pendientes de GAP 4",operador:null},
+    {fecha:"2026-05-12",turno:null,horaInicio:"16:44",horaFin:"16:56",tiempoH:0.2,galpon:"GAP 6",categoria:"Proceso/Logística",motivo:"Se jala para modulos pendientes de GAP 6",operador:null},
+    {fecha:"2026-05-12",turno:null,horaInicio:"09:07",horaFin:"09:24",tiempoH:0.2833,galpon:"GAP 6",categoria:"Indeterminado (revisar)",motivo:"Problema en GAP 6",operador:null},
+    {fecha:"2026-05-06",turno:null,horaInicio:"06:56",horaFin:"07:20",tiempoH:0.4,galpon:"GAP 7",categoria:"Indeterminado (revisar)",motivo:"GAP 7 - Falla Niagara",operador:null},
+    {fecha:"2026-05-03",turno:null,horaInicio:"06:55",horaFin:"07:09",tiempoH:0.2333,galpon:"GAP 7",categoria:"Mecanismo (uñas/pines)",motivo:"GAP 7 - Uñas dobladas",operador:null},
+    {fecha:"2026-04-16",turno:null,horaInicio:"08:17",horaFin:"08:40",tiempoH:0.3833,galpon:"GAP 2",categoria:"Indeterminado (revisar)",motivo:"Eficiencia Baja - Gap2 - Problema en la niagara",operador:null},
+    {fecha:"2026-04-14",turno:null,horaInicio:"09:55",horaFin:"10:58",tiempoH:1.05,galpon:"GAP 6",categoria:"Proceso/Logística",motivo:"Eficiencia Baja - Gap6 - Problema en la niagara",operador:null},
+    {fecha:"2026-04-06",turno:null,horaInicio:"11:40",horaFin:"12:20",tiempoH:0.6667,galpon:"GAP 5",categoria:"Mecanismo (uñas/pines)",motivo:"Falla pin - Gap5",operador:null},
+    {fecha:"2026-04-06",turno:null,horaInicio:"10:30",horaFin:"11:40",tiempoH:1.1667,galpon:"GAP 5",categoria:"Mecanismo (uñas/pines)",motivo:"Falla pin - Gap5",operador:null},
+    {fecha:"2026-03-13",turno:null,horaInicio:"13:38",horaFin:"14:10",tiempoH:0.5333,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - GAp8 pin roto",operador:null},
+    {fecha:"2026-03-07",turno:null,horaInicio:"12:03",horaFin:"12:41",tiempoH:0.6333,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A2 - Gap 8 - Pin roto",operador:null},
+    {fecha:"2026-02-17",turno:null,horaInicio:"08:26",horaFin:"09:20",tiempoH:0.9,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A2 - Problema pin en filas - GAP8",operador:null},
+    {fecha:"2026-01-24",turno:null,horaInicio:"11:10",horaFin:"11:25",tiempoH:0.25,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - Pin roto Gap 8",operador:null},
+    {fecha:"2026-01-24",turno:null,horaInicio:"10:11",horaFin:"10:30",tiempoH:0.3167,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - Pin roto Gap 8",operador:null},
+    {fecha:"2026-01-20",turno:null,horaInicio:"09:46",horaFin:"10:02",tiempoH:0.2667,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - Pin roto Gap 8",operador:null},
+    {fecha:"2026-01-17",turno:null,horaInicio:"09:50",horaFin:"10:06",tiempoH:0.2667,galpon:"GAP 8",categoria:"Mecanismo (uñas/pines)",motivo:"A1 - Pin roto Gap 8",operador:null}
+  ];
+
+  /* SEED_ACTIVOS_GAP08: catálogo piloto de 35 activos del Galpón
+     Automatizado Tecno 08 (taxonomía ISO 14224 adaptada), sembrado igual
+     que arriba, una sola vez, si la colección "activos" está vacía. */
+  var SEED_ACTIVOS_GAP08 = [
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.MOT01",nombre:"Motor eléctrico fila 1 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 1",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"MOT - Motor eléctrico",placa:{marca:"Varvel",tipo:"JM 80B 4 B5",numeroSerie:"J0815648658",pesoKg:"9.2",claseAislamiento:"F",ip:"55",servicio:"S3 75%",pn:"91S03665",especificaciones:"230/400V, 50Hz, 3.44/1.98A, 0.75kW, 1390rpm, cos φ 0.76, efic. 72.1%\n265/460V, 60Hz, 3.44/1.98A, 0.86kW, 1665rpm, cos φ 0.7, efic. 78%"}},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.RED01",nombre:"Reductor fila 1 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 1",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"RED - Reductor"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.MOT02",nombre:"Motor eléctrico fila 2 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 2",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"MOT - Motor eléctrico"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.RED02",nombre:"Reductor fila 2 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 2",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"RED - Reductor"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.MOT03",nombre:"Motor eléctrico fila 3 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 3",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"MOT - Motor eléctrico"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.RED03",nombre:"Reductor fila 3 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 3",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"RED - Reductor"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.MOT04",nombre:"Motor eléctrico fila 4 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 4",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"MOT - Motor eléctrico"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.RED04",nombre:"Reductor fila 4 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 4",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"RED - Reductor"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.MOT05",nombre:"Motor eléctrico fila 5 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 5",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"MOT - Motor eléctrico"},
+    {codigo:"AVI.CAN.GBV.GAP08.NIA.RED05",nombre:"Reductor fila 5 - Faja Niagara",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora Niagara / Fila 5",seccion:"NIA - Faja Transportadora Niagara",claseEquipo:"RED - Reductor"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN11",nombre:"Banda transportadora de huevos - Fila 1, Nivel 1",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 1 - Nivel 1",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN12",nombre:"Banda transportadora de huevos - Fila 1, Nivel 2",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 1 - Nivel 2",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN13",nombre:"Banda transportadora de huevos - Fila 1, Nivel 3",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 1 - Nivel 3",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN14",nombre:"Banda transportadora de huevos - Fila 1, Nivel 4",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 1 - Nivel 4",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN15",nombre:"Banda transportadora de huevos - Fila 1, Nivel 5",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 1 - Nivel 5",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN21",nombre:"Banda transportadora de huevos - Fila 2, Nivel 1",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 2 - Nivel 1",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN22",nombre:"Banda transportadora de huevos - Fila 2, Nivel 2",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 2 - Nivel 2",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN23",nombre:"Banda transportadora de huevos - Fila 2, Nivel 3",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 2 - Nivel 3",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN24",nombre:"Banda transportadora de huevos - Fila 2, Nivel 4",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 2 - Nivel 4",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN25",nombre:"Banda transportadora de huevos - Fila 2, Nivel 5",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 2 - Nivel 5",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN31",nombre:"Banda transportadora de huevos - Fila 3, Nivel 1",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 3 - Nivel 1",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN32",nombre:"Banda transportadora de huevos - Fila 3, Nivel 2",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 3 - Nivel 2",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN33",nombre:"Banda transportadora de huevos - Fila 3, Nivel 3",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 3 - Nivel 3",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN34",nombre:"Banda transportadora de huevos - Fila 3, Nivel 4",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 3 - Nivel 4",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN35",nombre:"Banda transportadora de huevos - Fila 3, Nivel 5",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 3 - Nivel 5",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN41",nombre:"Banda transportadora de huevos - Fila 4, Nivel 1",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 4 - Nivel 1",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN42",nombre:"Banda transportadora de huevos - Fila 4, Nivel 2",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 4 - Nivel 2",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN43",nombre:"Banda transportadora de huevos - Fila 4, Nivel 3",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 4 - Nivel 3",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN44",nombre:"Banda transportadora de huevos - Fila 4, Nivel 4",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 4 - Nivel 4",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN45",nombre:"Banda transportadora de huevos - Fila 4, Nivel 5",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 4 - Nivel 5",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN51",nombre:"Banda transportadora de huevos - Fila 5, Nivel 1",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 5 - Nivel 1",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN52",nombre:"Banda transportadora de huevos - Fila 5, Nivel 2",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 5 - Nivel 2",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN53",nombre:"Banda transportadora de huevos - Fila 5, Nivel 3",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 5 - Nivel 3",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN54",nombre:"Banda transportadora de huevos - Fila 5, Nivel 4",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 5 - Nivel 4",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"},
+    {codigo:"AVI.CAN.GBV.GAP08.BTH.BAN55",nombre:"Banda transportadora de huevos - Fila 5, Nivel 5",galpon:"GAP 8",ubicacion:"Sistema Recolección de Huevos / Faja Transportadora de Huevos / Fila 5 - Nivel 5",seccion:"BTH - Faja Transportadora de Huevos",claseEquipo:"BAN - Banda transportadora"}
+  ];
+
+  /* ---------------- render: role bar ---------------- */
+  /* El selector de Nombre solo muestra a las personas del Rol elegido en el
+     otro selector (ej. Rol=Supervisor -> solo los 3 supervisores), más la
+     opción "Otro". Por eso hay que reconstruirlo cada vez que cambia el Rol,
+     no solo una vez al cargar. */
+  function personasDelRolActual(){
+    return PERSONAL.filter(function(p){ return p.rol===state.role; });
+  }
+  function populateNameSelect(){
+    var sel = document.getElementById("nameSelect");
+    var people = personasDelRolActual();
+    var html = people.map(function(p){
+      return '<option value="'+esc(p.nombre)+'">'+esc(p.nombre)+' — '+esc(p.puesto)+'</option>';
+    }).join("");
+    html += '<option value="__otro__">Otro / no está en la lista…</option>';
+    sel.innerHTML = html;
+  }
+  function syncNameUI(){
+    var sel = document.getElementById("nameSelect");
+    var other = document.getElementById("nameInputOther");
+    var match = personasDelRolActual().some(function(p){ return p.nombre===state.nombre; });
+    if(state.nombre && match){
+      sel.value = state.nombre;
+      other.style.display = "none";
+    }else{
+      sel.value = "__otro__";
+      other.style.display = "";
+      other.value = state.nombre;
+    }
+  }
+  document.getElementById("nameSelect").addEventListener("change", function(e){
+    var other = document.getElementById("nameInputOther");
+    if(e.target.value === "__otro__"){
+      other.style.display = "";
+      other.value = "";
+      other.focus();
+      return;
+    }
+    other.style.display = "none";
+    state.nombre = e.target.value;
+    var person = PERSONAL.find(function(p){ return p.nombre===state.nombre; });
+    if(person){ state.role = person.rol; }
+    savePrefs();
+    applyRoleUI();
+  });
+  document.getElementById("nameInputOther").addEventListener("input", function(e){
+    state.nombre = e.target.value; savePrefs();
+  });
+
+  function applyRoleUI(){
+    document.getElementById("roleSelect").value = state.role;
+    populateNameSelect();
+    syncNameUI();
+    document.getElementById("roleChip").textContent = state.role.toUpperCase();
+    var perms = PERMS[state.role];
+    document.getElementById("tabOS").style.display = perms.seeOSTab ? "" : "none";
+    if(document.getElementById("view-os").classList.contains("active") && !perms.seeOSTab){
+      switchView("dashboard");
+    }
+    document.getElementById("osLocked").hidden = !!perms.createOS;
+    document.getElementById("osContent").style.display = perms.createOS ? "" : "none";
+    var exportBtn = document.getElementById("btnExport");
+    exportBtn.style.display = perms.exportExcel ? "" : "none";
+    var tecnicoField = document.getElementById("f_tecnico");
+    if(tecnicoField && !tecnicoField.value) tecnicoField.value = state.nombre;
+    document.getElementById("activosLocked").hidden = !!perms.manageActivos;
+    document.getElementById("activosFormWrap").style.display = perms.manageActivos ? "" : "none";
+    document.getElementById("thCostoActivo").style.display = perms.seeCostos ? "" : "none";
+    document.getElementById("fichaOSBlock").style.display = perms.seeCostos ? "" : "none";
+    renderOTTable();
+    renderOSTable();
+    renderActivosTable();
+    if(state.fichaCodigo) renderFicha();
+  }
+
+  document.getElementById("roleSelect").addEventListener("change", function(e){
+    state.role = e.target.value;
+    var defaultName = DEFAULT_NAME_BY_ROLE[state.role];
+    if(defaultName) state.nombre = defaultName;
+    savePrefs(); applyRoleUI();
+  });
+
+  /* ---------------- tabs ---------------- */
+  function switchView(name){
+    document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+    document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.remove("active"); });
+    document.getElementById("view-"+name).classList.add("active");
+    var btn = document.querySelector('nav.tabs button[data-view="'+name+'"]');
+    if(btn) btn.classList.add("active");
+  }
+  document.getElementById("tabs").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-view]");
+    if(!btn) return;
+    switchView(btn.getAttribute("data-view"));
+  });
+
+  /* ---------------- dashboard ---------------- */
+  function combinedEvents(){
+    var evs = state.fallas.map(function(f){
+      return {fecha:f.fecha, galpon:f.galpon, categoria:f.categoria, tiempoH:f.tiempoH||0};
+    });
+    state.ot.forEach(function(o){
+      evs.push({fecha:o.fecha, galpon:o.galpon, categoria:o.equipo, tiempoH:o.tiempoParadaH||0});
+    });
+    return evs;
+  }
+
+  function renderKPIs(){
+    var evs = combinedEvents();
+    var totalH = evs.reduce(function(a,e){ return a+e.tiempoH; }, 0);
+    var abiertas = state.ot.filter(function(o){ return o.estado==="Abierta"; }).length;
+    var enProceso = state.ot.filter(function(o){ return o.estado==="En Proceso"; }).length;
+    var osAbiertas = state.os.filter(function(o){ return o.estado!=="Cerrada"; }).length;
+    var byGap = {};
+    evs.forEach(function(e){ byGap[e.galpon]=(byGap[e.galpon]||0)+e.tiempoH; });
+    var peorGap = Object.keys(byGap).sort(function(a,b){ return byGap[b]-byGap[a]; })[0] || "—";
+
+    var cards = [
+      {lbl:"Eventos registrados", val:evs.length, sub:"histórico + OT"},
+      {lbl:"Horas de parada acumuladas", val:fmtH(totalH)+" h", sub:"ene – sep 2026"},
+      {lbl:"OT abiertas", val:abiertas, sub:enProceso+" en proceso"},
+      {lbl:"OS pendientes de cierre", val:osAbiertas, sub:"vinculadas a Softcom"},
+      {lbl:"Galpón más crítico", val:peorGap, sub: byGap[peorGap] ? fmtH(byGap[peorGap])+" h perdidas" : "—"}
+    ];
+    document.getElementById("kpiGrid").innerHTML = cards.map(function(c){
+      return '<div class="kpi"><div class="lbl">'+esc(c.lbl)+'</div><div class="val">'+esc(c.val)+'</div><div class="delta">'+esc(c.sub)+'</div></div>';
+    }).join("");
+  }
+
+  function renderBarChart(elId, dataObj, cls){
+    var entries = Object.keys(dataObj).map(function(k){ return [k, dataObj[k]]; });
+    entries.sort(function(a,b){ return b[1]-a[1]; });
+    var max = entries.length ? entries[0][1] : 1;
+    if(max<=0) max = 1;
+    var html = entries.map(function(e){
+      var pct = Math.max(3, Math.round((e[1]/max)*100));
+      return '<div class="barrow"><div class="lbl">'+esc(e[0])+'</div>'+
+        '<div class="track"><div class="fill '+cls+'" style="width:'+pct+'%"></div></div>'+
+        '<div class="amt">'+fmtH(e[1])+' h</div></div>';
+    }).join("");
+    document.getElementById(elId).innerHTML = html || '<div class="empty-state">Sin datos aún</div>';
+  }
+
+  function renderTrend(){
+    var evs = combinedEvents();
+    var byMonth = {};
+    evs.forEach(function(e){
+      var m = (e.fecha||"").slice(0,7);
+      if(!m) return;
+      byMonth[m] = (byMonth[m]||0) + e.tiempoH;
+    });
+    var months = Object.keys(byMonth).sort();
+    if(months.length===0){
+      document.getElementById("chartTrend").innerHTML = '<div class="empty-state">Sin datos aún</div>';
+      return;
+    }
+    var W=760,H=150,padL=34,padR=14,padT=14,padB=24;
+    var innerW = W-padL-padR, innerH = H-padT-padB;
+    var maxV = Math.max.apply(null, months.map(function(m){ return byMonth[m]; }));
+    if(maxV<=0) maxV=1;
+    var stepX = months.length>1 ? innerW/(months.length-1) : 0;
+    var pts = months.map(function(m,i){
+      var x = padL + stepX*i;
+      var y = padT + innerH - (byMonth[m]/maxV)*innerH;
+      return [x,y];
+    });
+    var path = pts.map(function(p,i){ return (i===0?"M":"L")+p[0].toFixed(1)+","+p[1].toFixed(1); }).join(" ");
+    var area = path + " L"+pts[pts.length-1][0].toFixed(1)+","+(padT+innerH)+" L"+pts[0][0].toFixed(1)+","+(padT+innerH)+" Z";
+    var monthNames = {"01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic"};
+    var labels = months.map(function(m,i){
+      var mm = m.slice(5,7);
+      return '<text x="'+pts[i][0].toFixed(1)+'" y="'+(H-6)+'" font-size="10" text-anchor="middle">'+ (monthNames[mm]||mm) +'</text>';
+    }).join("");
+    var dots = pts.map(function(p,i){
+      return '<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2" fill="var(--accent)" />'+
+        '<text x="'+p[0].toFixed(1)+'" y="'+(p[1]-8)+'" font-size="10" text-anchor="middle" fill="var(--ink-muted)">'+fmtH(byMonth[months[i]])+'</text>';
+    }).join("");
+    var gridY = [0.25,0.5,0.75].map(function(f){
+      var y = padT + innerH*(1-f);
+      return '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,4"/>';
+    }).join("");
+    var svg = '<svg class="trend-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+      '<defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>'+
+      '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/></linearGradient></defs>'+
+      gridY +
+      '<path d="'+area+'" fill="url(#trendFill)" stroke="none"/>'+
+      '<path d="'+path+'" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'+
+      dots + labels +
+      '</svg>';
+    document.getElementById("chartTrend").innerHTML = svg;
+  }
+
+  function renderDashboard(){
+    renderKPIs();
+    var evs = combinedEvents();
+    var byGap = {}, byCausa = {};
+    evs.forEach(function(e){
+      byGap[e.galpon] = (byGap[e.galpon]||0) + e.tiempoH;
+      byCausa[e.categoria] = (byCausa[e.categoria]||0) + e.tiempoH;
+    });
+    renderBarChart("chartGap", byGap, "acc1");
+    renderBarChart("chartCausa", byCausa, "acc2");
+    renderTrend();
+  }
+
+  /* ---------------- historial ---------------- */
+  /* Unión de la lista maestra de causas con los valores que ya existen en los
+     datos (registros históricos con categorías antiguas, o "Otro" escrito a
+     mano por un técnico) para que siempre se puedan filtrar, aunque ya no
+     estén en CAUSAS. */
+  function causasConocidas(extra){
+    var vistos = {};
+    var out = [];
+    CAUSAS.concat(extra || []).forEach(function(c){
+      if(c && !vistos[c]){ vistos[c] = true; out.push(c); }
+    });
+    return out;
+  }
+
+  function populateHistFilters(){
+    var galponSel = document.getElementById("filtroGalponHist");
+    var causaSel = document.getElementById("filtroCausaHist");
+    var causas = causasConocidas(state.fallas.map(function(f){ return f.categoria; }));
+    galponSel.innerHTML = '<option value="">Todos los galpones</option>' + GAPS.map(function(g){ return '<option>'+g+'</option>'; }).join("");
+    causaSel.innerHTML = '<option value="">Todas las causas</option>' + causas.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join("");
+  }
+  function renderHistorial(){
+    var fg = document.getElementById("filtroGalponHist").value;
+    var fc = document.getElementById("filtroCausaHist").value;
+    var rows = state.fallas.filter(function(f){
+      return (!fg || f.galpon===fg) && (!fc || f.categoria===fc);
+    }).sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+    document.getElementById("histCount").textContent = rows.length + " registros";
+    if(rows.length===0){
+      document.getElementById("tbodyHist").innerHTML = '<tr><td colspan="9" class="empty-state">Sin registros para este filtro</td></tr>';
+      return;
+    }
+    document.getElementById("tbodyHist").innerHTML = rows.map(function(f){
+      return "<tr><td>"+esc(f.fecha)+"</td><td>"+esc(f.turno||"—")+"</td><td class='mono'>"+esc(f.horaInicio||"—")+
+        "</td><td class='mono'>"+esc(f.horaFin||"—")+"</td><td class='mono'>"+fmtH(f.tiempoH)+"</td><td>"+esc(f.galpon)+
+        "</td><td>"+esc(f.categoria)+"</td><td>"+esc(f.motivo)+"</td><td>"+esc(f.operador||"—")+"</td></tr>";
+    }).join("");
+  }
+  document.getElementById("filtroGalponHist").addEventListener("change", renderHistorial);
+  document.getElementById("filtroCausaHist").addEventListener("change", renderHistorial);
+
+  /* ---------------- OT: form + table ---------------- */
+  function populateOTFilters(){
+    var g = document.getElementById("filtroGalponOT");
+    var e = document.getElementById("filtroEquipoOT");
+    var equipos = causasConocidas(state.ot.map(function(o){ return o.equipo; }));
+    g.innerHTML = '<option value="">Todos los galpones</option>' + GAPS.map(function(x){ return '<option>'+x+'</option>'; }).join("");
+    e.innerHTML = '<option value="">Todos los equipos</option>' + equipos.map(function(x){ return '<option>'+esc(x)+'</option>'; }).join("");
+  }
+  function populateActivoSelect(presetCodigo){
+    var sel = document.getElementById("f_activo");
+    if(!sel) return;
+    var current = presetCodigo || sel.value;
+    sel.innerHTML = '<option value="">Sin activo específico del catálogo</option>' +
+      state.activos.map(function(a){
+        return '<option value="'+esc(a.codigo)+'">'+esc(a.codigo)+' — '+esc(a.nombre)+' ('+esc(a.galpon)+')</option>';
+      }).join("");
+    if(current) sel.value = current;
+  }
+  document.getElementById("f_activo").addEventListener("change", function(e){
+    var a = state.activos.find(function(x){ return x.codigo===e.target.value; });
+    if(a) document.getElementById("f_galpon").value = a.galpon;
+  });
+  document.getElementById("f_fecha").value = todayISO();
+  document.getElementById("filtroGalponOT").addEventListener("change", renderOTTable);
+  document.getElementById("filtroEquipoOT").addEventListener("change", renderOTTable);
+  document.getElementById("filtroEstadoOT").addEventListener("change", renderOTTable);
+
+  document.getElementById("f_equipo").addEventListener("change", function(e){
+    var otro = document.getElementById("f_equipo_otro");
+    if(e.target.value === "__otro__"){
+      otro.style.display = "";
+      otro.value = "";
+      otro.focus();
+    }else{
+      otro.style.display = "none";
+      otro.value = "";
+    }
+  });
+
+  function equipoSeleccionado(){
+    var sel = document.getElementById("f_equipo").value;
+    if(sel === "__otro__"){
+      return document.getElementById("f_equipo_otro").value.trim();
+    }
+    return sel;
+  }
+
+  document.getElementById("formOT").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var submitBtn = ev.target.querySelector('button[type="submit"]');
+    var fotoFile = document.getElementById("f_foto_falla").files[0] || null;
+    var equipoVal = equipoSeleccionado();
+    if(document.getElementById("f_equipo").value === "__otro__" && !equipoVal){
+      toast("Escribe el equipo o causa antes de guardar.");
+      return;
+    }
+    if(submitBtn) submitBtn.disabled = true;
+    uploadPhoto(fotoFile).then(function(fotoFallaId){
+      var data = {
+        numero: "OT-"+uid(),
+        fecha: document.getElementById("f_fecha").value || todayISO(),
+        galpon: document.getElementById("f_galpon").value,
+        equipo: equipoVal,
+        detalleEquipo: document.getElementById("f_detalle").value.trim(),
+        activoCodigo: document.getElementById("f_activo").value || null,
+        descripcion: document.getElementById("f_desc").value.trim(),
+        prioridad: document.getElementById("f_prioridad").value,
+        tiempoParadaH: parseFloat(document.getElementById("f_tiempo").value) || 0,
+        tecnico: document.getElementById("f_tecnico").value.trim() || state.nombre || "Sin nombre",
+        estado: "Abierta",
+        observaciones: "",
+        fotoFallaId: fotoFallaId,
+        fotoCierreId: null,
+        osId: null,
+        osNumeroSoftcom: null,
+        creadoPorRol: state.role,
+        creadoEn: new Date().toISOString()
+      };
+      if(!data.galpon || !data.equipo || !data.descripcion){
+        toast("Completa galpón, equipo y descripción.");
+        if(submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      createOT(data, submitBtn);
+    });
+  });
+
+  function resetEquipoOtroUI(){
+    var otro = document.getElementById("f_equipo_otro");
+    otro.style.display = "none";
+    otro.value = "";
+  }
+
+  function createOT(data, submitBtn){
+    function done(){ if(submitBtn) submitBtn.disabled = false; }
+    if(state.db){
+      state.db.collection("ot").add(data).then(function(){
+        toast("OT "+data.numero+" generada");
+        document.getElementById("formOT").reset();
+        document.getElementById("f_fecha").value = todayISO();
+        document.getElementById("f_prioridad").value = "Media";
+        resetEquipoOtroUI();
+        done();
+      }).catch(function(err){
+        toast("No se pudo guardar la OT: "+(err && err.code ? err.code : "error"));
+        done();
+      });
+    }else{
+      data.id = "local-"+Date.now();
+      state.ot.unshift(data);
+      toast("OT "+data.numero+" generada (modo local, sin conexión)");
+      document.getElementById("formOT").reset();
+      document.getElementById("f_fecha").value = todayISO();
+      resetEquipoOtroUI();
+      done();
+      renderAll();
+    }
+  }
+
+  function otOptionsForOS(){
+    return state.ot.filter(function(o){ return o.estado!=="Cerrada"; });
+  }
+
+  function renderOTTable(){
+    populateOTFilters();
+    var fg = document.getElementById("filtroGalponOT").value;
+    var fe = document.getElementById("filtroEquipoOT").value;
+    var fs = document.getElementById("filtroEstadoOT").value;
+    var rows = state.ot.filter(function(o){
+      return (!fg || o.galpon===fg) && (!fe || o.equipo===fe) && (!fs || o.estado===fs);
+    }).sort(function(a,b){ return (b.creadoEn||"").localeCompare(a.creadoEn||""); });
+    document.getElementById("gestionCount").textContent = rows.length + " órdenes";
+    var perms = PERMS[state.role];
+    if(rows.length===0){
+      document.getElementById("tbodyOT").innerHTML = '<tr><td colspan="12" class="empty-state">Aún no hay OT registradas. Crea la primera desde “Registrar OT”.</td></tr>';
+    }else{
+      document.getElementById("tbodyOT").innerHTML = rows.map(function(o){
+        var canEdit = perms.manageOT==="all" || (perms.manageOT==="own" && o.tecnico===state.nombre);
+        var estadoCell = canEdit && o.estado!=="Cerrada" ?
+          '<select data-ot-id="'+o.id+'" class="estadoSelect">'+
+            ["Abierta","En Proceso","Cerrada"].map(function(s){ return '<option'+(s===o.estado?" selected":"")+'>'+s+'</option>'; }).join("")+
+          '</select>' :
+          '<span class="pill '+statusPillClass(o.estado)+'">'+esc(o.estado)+'</span>';
+        var osCell = o.osNumeroSoftcom ? esc(o.osNumeroSoftcom) : (o.osId ? '<span class="mono">interna</span>' : "—");
+        var fotoCell = (o.fotoFallaId ? '<a href="'+blobSrc(o.fotoFallaId)+'" target="_blank" rel="noopener" title="Ver foto de falla">📷 falla</a>' : '') +
+          (o.fotoFallaId && o.fotoCierreId ? ' · ' : '') +
+          (o.fotoCierreId ? '<a href="'+blobSrc(o.fotoCierreId)+'" target="_blank" rel="noopener" title="Ver foto de cierre">📷 cierre</a>' : '') +
+          (canEdit ? '<div><button type="button" class="btnAdjuntarFoto btn-sm" data-ot-id="'+o.id+'">'+(o.fotoCierreId?"Cambiar foto":"+ Adjuntar foto")+'</button></div>' : (!o.fotoFallaId && !o.fotoCierreId ? "—" : ""));
+        return "<tr><td class='mono'>"+esc(o.numero)+"</td><td>"+esc(o.fecha)+"</td><td>"+esc(o.galpon)+"</td><td class='mono'>"+esc(o.activoCodigo||"—")+"</td><td>"+esc(o.equipo)+
+          (o.detalleEquipo? " <span style='color:var(--ink-faint)'>· "+esc(o.detalleEquipo)+"</span>":"")+
+          "</td><td style='max-width:220px'>"+esc(o.descripcion)+"</td><td>"+esc(o.tecnico)+
+          "</td><td><span class='pill "+prioPillClass(o.prioridad)+"'>"+esc(o.prioridad)+"</span></td><td class='mono'>"+fmtH(o.tiempoParadaH)+
+          "</td><td>"+estadoCell+"</td><td>"+osCell+"</td><td style='font-size:11px'>"+fotoCell+"</td></tr>";
+      }).join("");
+    }
+    document.querySelectorAll(".estadoSelect").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        updateOTEstado(sel.getAttribute("data-ot-id"), sel.value);
+      });
+    });
+    document.querySelectorAll(".btnAdjuntarFoto").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        pendingFotoOtId = btn.getAttribute("data-ot-id");
+        document.getElementById("hiddenFotoInput").click();
+      });
+    });
+    var osSelect = document.getElementById("os_ot");
+    if(osSelect){
+      var current = osSelect.value;
+      osSelect.innerHTML = '<option value="">Selecciona una OT abierta o en proceso…</option>' +
+        otOptionsForOS().map(function(o){
+          return '<option value="'+o.id+'">'+esc(o.numero)+" · "+esc(o.galpon)+" · "+esc(o.equipo)+'</option>';
+        }).join("");
+      if(current) osSelect.value = current;
+    }
+  }
+
+  function updateOTEstado(id, estado){
+    var patch = { estado: estado, actualizadoEn: new Date().toISOString() };
+    if(state.db){
+      state.db.doc("ot/"+id).update(patch).then(function(){
+        toast("OT actualizada a “"+estado+"”");
+      }).catch(function(){ toast("No se pudo actualizar la OT"); });
+    }else{
+      var o = state.ot.find(function(x){ return x.id===id; });
+      if(o){ Object.assign(o, patch); renderAll(); toast("OT actualizada (modo local)"); }
+    }
+  }
+
+  document.getElementById("hiddenFotoInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    var otId = pendingFotoOtId;
+    pendingFotoOtId = null;
+    e.target.value = "";
+    if(!file || !otId) return;
+    uploadPhoto(file).then(function(fotoId){
+      if(!fotoId) return;
+      var patch = { fotoCierreId: fotoId };
+      if(state.db){
+        state.db.doc("ot/"+otId).update(patch).then(function(){ toast("Foto adjuntada"); }).catch(function(){ toast("No se pudo guardar la foto"); });
+      }else{
+        var o = state.ot.find(function(x){ return x.id===otId; });
+        if(o){ Object.assign(o, patch); renderAll(); toast("Foto adjuntada (modo local)"); }
+      }
+    });
+  });
+
+  /* ---------------- OS: form + table ---------------- */
+  document.getElementById("os_fecha").value = todayISO();
+  document.getElementById("os_ot").addEventListener("change", function(e){
+    var ot = state.ot.find(function(o){ return o.id===e.target.value; });
+    if(ot){
+      document.getElementById("os_galpon").value = ot.galpon;
+      var eqSel = document.getElementById("os_equipo");
+      if(Array.from(eqSel.options).some(function(o){ return o.value===ot.equipo; })){
+        eqSel.value = ot.equipo;
+      }
+    }
+  });
+  document.getElementById("formOS").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var otId = document.getElementById("os_ot").value;
+    var ot = otId ? state.ot.find(function(o){ return o.id===otId; }) : null;
+    var galpon = document.getElementById("os_galpon").value;
+    var equipo = document.getElementById("os_equipo").value;
+    if(!galpon || !equipo){ toast("Selecciona galpón y equipo."); return; }
+    var data = {
+      numero: "OS-"+uid(),
+      numeroSoftcom: document.getElementById("os_numero").value.trim(),
+      fecha: document.getElementById("os_fecha").value || todayISO(),
+      otId: otId || null,
+      otNumero: ot ? ot.numero : null,
+      galpon: galpon,
+      equipo: equipo,
+      proveedor: document.getElementById("os_proveedor").value.trim(),
+      costo: parseFloat(document.getElementById("os_costo").value) || 0,
+      estado: "Pendiente",
+      registradoPorRol: state.role,
+      registradoPor: state.nombre || "Sin nombre",
+      creadoEn: new Date().toISOString()
+    };
+    createOS(data, ot);
+  });
+
+  function createOS(data, ot){
+    function afterCreate(osId){
+      if(!ot) return;
+      var patch = { osId: osId, osNumeroSoftcom: data.numeroSoftcom || null };
+      if(state.db){
+        state.db.doc("ot/"+ot.id).update(patch).catch(function(){});
+      }else{
+        Object.assign(ot, patch);
+      }
+    }
+    if(state.db){
+      state.db.collection("os").add(data).then(function(ref){
+        afterCreate(ref.id);
+        toast("OS "+data.numero+" registrada");
+        document.getElementById("formOS").reset();
+        document.getElementById("os_fecha").value = todayISO();
+      }).catch(function(){ toast("No se pudo registrar la OS"); });
+    }else{
+      data.id = "local-os-"+Date.now();
+      afterCreate(data.id);
+      state.os.unshift(data);
+      toast("OS "+data.numero+" registrada (modo local)");
+      document.getElementById("formOS").reset();
+      document.getElementById("os_fecha").value = todayISO();
+      renderAll();
+    }
+  }
+
+  function renderOSTable(){
+    var rows = state.os.slice().sort(function(a,b){ return (b.creadoEn||"").localeCompare(a.creadoEn||""); });
+    var perms = PERMS[state.role];
+    if(rows.length===0){
+      document.getElementById("tbodyOS").innerHTML = '<tr><td colspan="9" class="empty-state">Aún no hay OS registradas.</td></tr>';
+      return;
+    }
+    document.getElementById("tbodyOS").innerHTML = rows.map(function(o){
+      var estadoCell = perms.manageOS ?
+        '<select data-os-id="'+o.id+'" class="osEstadoSelect">'+
+          ["Pendiente","En Ejecución","Cerrada"].map(function(s){ return '<option'+(s===o.estado?" selected":"")+'>'+s+'</option>'; }).join("")+
+        '</select>' :
+        '<span class="pill '+(o.estado==="Cerrada"?"cerrada":"proceso")+'">'+esc(o.estado)+'</span>';
+      return "<tr><td class='mono'>"+esc(o.numero)+"</td><td class='mono'>"+esc(o.numeroSoftcom||"—")+"</td><td>"+esc(o.fecha)+
+        "</td><td class='mono'>"+esc(o.otNumero||"— (independiente)")+"</td><td>"+esc(o.galpon)+"</td><td>"+esc(o.proveedor||"—")+
+        "</td><td class='mono'>"+(o.costo?fmtH(o.costo):"—")+"</td><td>"+estadoCell+"</td><td></td></tr>";
+    }).join("");
+    document.querySelectorAll(".osEstadoSelect").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var patch = { estado: sel.value };
+        if(state.db){
+          state.db.doc("os/"+sel.getAttribute("data-os-id")).update(patch).then(function(){ toast("OS actualizada"); });
+        }else{
+          var o = state.os.find(function(x){ return x.id===sel.getAttribute("data-os-id"); });
+          if(o){ Object.assign(o, patch); renderAll(); }
+        }
+      });
+    });
+  }
+
+  /* ---------------- export to excel ---------------- */
+  document.getElementById("btnExport").addEventListener("click", function(){
+    try{
+      var wb = XLSX.utils.book_new();
+      var wsHist = XLSX.utils.json_to_sheet(state.fallas.map(function(f){
+        return { Fecha:f.fecha, Turno:f.turno||"", "Hora Inicio":f.horaInicio||"", "Hora Fin":f.horaFin||"",
+          "Tiempo (h)":f.tiempoH, Galpon:f.galpon, "Causa raiz":f.categoria, Motivo:f.motivo, Operador:f.operador||"" };
+      }));
+      var wsOT = XLSX.utils.json_to_sheet(state.ot.map(function(o){
+        return { "N Oapos OT":o.numero, Fecha:o.fecha, Galpon:o.galpon, Equipo:o.equipo, Detalle:o.detalleEquipo||"",
+          Descripcion:o.descripcion, Tecnico:o.tecnico, Prioridad:o.prioridad, "Tiempo (h)":o.tiempoParadaH,
+          Estado:o.estado, "OS Softcom":o.osNumeroSoftcom||"", Observaciones:o.observaciones||"" };
+      }));
+      var wsOS = XLSX.utils.json_to_sheet(state.os.map(function(o){
+        return { "N OS interno":o.numero, "N Softcom":o.numeroSoftcom||"", Fecha:o.fecha, "OT vinculada":o.otNumero||"Independiente",
+          Galpon:o.galpon, Equipo:o.equipo, Proveedor:o.proveedor||"", "Costo (S/)":o.costo, Estado:o.estado,
+          "Registrado por":o.registradoPor||"" };
+      }));
+      var wsActivos = XLSX.utils.json_to_sheet(state.activos.map(function(a){
+        var st = activoStats(a.codigo);
+        return { Codigo:a.codigo, Nombre:a.nombre, Galpon:a.galpon, Ubicacion:a.ubicacion||"",
+          "OT totales":st.total, "OT abiertas":st.abiertas, "Horas de parada":st.horas, "Costo OS (S/)":st.costo };
+      }));
+      XLSX.utils.book_append_sheet(wb, wsHist, "Historial de fallas");
+      XLSX.utils.book_append_sheet(wb, wsOT, "Ordenes de Trabajo");
+      XLSX.utils.book_append_sheet(wb, wsOS, "Ordenes de Servicio");
+      XLSX.utils.book_append_sheet(wb, wsActivos, "Activos");
+      var out = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+      var blob = new Blob([out], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "gestion_ot_os_export.xlsx";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      toast("Archivo Excel descargado");
+    }catch(e){
+      toast("Error generando el Excel");
+    }
+  });
+
+  /* ---------------- render all ---------------- */
+  /* ---------------- activos + QR ---------------- */
+  function activoStats(codigo){
+    var otsForActivo = state.ot.filter(function(o){ return o.activoCodigo===codigo; });
+    var abiertas = otsForActivo.filter(function(o){ return o.estado!=="Cerrada"; }).length;
+    var horas = otsForActivo.reduce(function(a,o){ return a+(o.tiempoParadaH||0); }, 0);
+    var otIds = otsForActivo.map(function(o){ return o.id; });
+    var osForActivo = state.os.filter(function(o){ return o.otId && otIds.indexOf(o.otId)>=0; });
+    var costo = osForActivo.reduce(function(a,o){ return a+(o.costo||0); }, 0);
+    return { ots: otsForActivo, oss: osForActivo, total: otsForActivo.length, abiertas: abiertas, horas: horas, costo: costo, cantidadOS: osForActivo.length };
+  }
+
+  function renderActivosTable(){
+    var perms = PERMS[state.role];
+    document.getElementById("activosCount").textContent = state.activos.length + " activo(s) registrado(s)";
+    if(state.activos.length===0){
+      document.getElementById("tbodyActivos").innerHTML = '<tr><td colspan="9" class="empty-state">Aún no hay activos dados de alta. Usa el formulario de arriba para cargar el primero.</td></tr>';
+    }else{
+      document.getElementById("tbodyActivos").innerHTML = state.activos.slice().sort(function(a,b){ return a.codigo.localeCompare(b.codigo); }).map(function(a){
+        var st = activoStats(a.codigo);
+        return "<tr><td class='mono'>"+esc(a.codigo)+"</td><td>"+esc(a.nombre)+"</td><td>"+esc(a.galpon)+"</td><td>"+esc(a.ubicacion||"—")+
+          "</td><td class='mono'>"+st.total+"</td><td class='mono'>"+st.abiertas+"</td><td class='mono'>"+fmtH(st.horas)+
+          "</td><td class='mono' style='display:"+(perms.seeCostos?"table-cell":"none")+"'>"+(perms.seeCostos?fmtH(st.costo):"")+
+          "</td><td><button type='button' class='btnVerFicha btn-sm' data-codigo=\""+esc(a.codigo)+"\">Ver ficha</button></td></tr>";
+      }).join("");
+    }
+    populateActivoSelect();
+    document.querySelectorAll(".btnVerFicha").forEach(function(btn){
+      btn.addEventListener("click", function(){ openFicha(btn.getAttribute("data-codigo")); });
+    });
+  }
+
+  document.getElementById("formActivo").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var codigo = document.getElementById("a_codigo").value.trim().toUpperCase();
+    var placa = {
+      marca: document.getElementById("a_marca").value.trim(),
+      tipo: document.getElementById("a_tipo").value.trim(),
+      numeroSerie: document.getElementById("a_numeroSerie").value.trim(),
+      pesoKg: document.getElementById("a_pesoKg").value.trim(),
+      claseAislamiento: document.getElementById("a_claseAislamiento").value.trim(),
+      ip: document.getElementById("a_ip").value.trim(),
+      servicio: document.getElementById("a_servicio").value.trim(),
+      pn: document.getElementById("a_pn").value.trim(),
+      especificaciones: document.getElementById("a_especificaciones").value.trim()
+    };
+    var tienePlaca = Object.keys(placa).some(function(k){ return placa[k]; });
+    var data = {
+      codigo: codigo,
+      nombre: document.getElementById("a_nombre").value.trim(),
+      galpon: document.getElementById("a_galpon").value,
+      ubicacion: document.getElementById("a_ubicacion").value.trim(),
+      creadoPor: state.nombre || "Sin nombre",
+      creadoPorRol: state.role,
+      creadoEn: new Date().toISOString()
+    };
+    if(tienePlaca) data.placa = placa;
+    if(!data.codigo || !data.nombre || !data.galpon){ toast("Completa código, nombre y galpón."); return; }
+    if(state.activos.some(function(a){ return a.codigo===codigo; })){ toast("Ya existe un activo con ese código."); return; }
+    if(state.db){
+      state.db.collection("activos").doc(codigo).set(data).then(function(){
+        toast("Activo "+codigo+" dado de alta");
+        document.getElementById("formActivo").reset();
+      }).catch(function(){ toast("No se pudo guardar el activo"); });
+    }else{
+      data.id = codigo;
+      state.activos.unshift(data);
+      toast("Activo "+codigo+" dado de alta (modo local)");
+      document.getElementById("formActivo").reset();
+      renderAll();
+    }
+  });
+
+  function openFicha(codigo){
+    state.fichaCodigo = codigo;
+    try{ history.replaceState(null, "", "?activo="+encodeURIComponent(codigo)); }catch(e){}
+    switchView("ficha");
+    renderFicha();
+  }
+
+  /* Muestra los datos de placa del equipo (marca, tipo, serie, potencia…)
+     cuando el activo los tiene cargados; si no, oculta la sección entera
+     para no dejar un bloque vacío en la ficha. */
+  function renderFichaPlaca(placa){
+    var block = document.getElementById("fichaPlacaBlock");
+    if(!placa){ block.hidden = true; return; }
+    var campos = [
+      {lbl:"Marca", val:placa.marca},
+      {lbl:"Tipo / modelo", val:placa.tipo},
+      {lbl:"N° de serie", val:placa.numeroSerie},
+      {lbl:"Peso", val:placa.pesoKg ? placa.pesoKg+" kg" : ""},
+      {lbl:"Clase aislamiento", val:placa.claseAislamiento},
+      {lbl:"Grado IP", val:placa.ip},
+      {lbl:"Servicio", val:placa.servicio},
+      {lbl:"PN", val:placa.pn}
+    ].filter(function(c){ return c.val; });
+    if(!campos.length && !placa.especificaciones){ block.hidden = true; return; }
+    block.hidden = false;
+    var html = '<div class="kpi-grid" style="margin-bottom:14px;">' + campos.map(function(c){
+      return '<div class="kpi"><div class="lbl">'+esc(c.lbl)+'</div><div class="val" style="font-size:16px;">'+esc(c.val)+'</div></div>';
+    }).join("") + '</div>';
+    if(placa.especificaciones){
+      html += '<div class="hint" style="white-space:pre-line; font-family:var(--font-mono,monospace); font-size:12.5px; background:var(--surface-2); padding:12px; border-radius:8px;">'+esc(placa.especificaciones)+'</div>';
+    }
+    document.getElementById("fichaPlacaContenido").innerHTML = html;
+  }
+
+  function renderFicha(){
+    var codigo = state.fichaCodigo;
+    var a = state.activos.find(function(x){ return x.codigo===codigo; });
+    document.getElementById("fichaNoEncontrado").hidden = !!a;
+    document.getElementById("fichaContenido").style.display = a ? "" : "none";
+    if(!a){
+      document.getElementById("fichaTitulo").textContent = "Ficha de activo";
+      return;
+    }
+    document.getElementById("fichaTitulo").textContent = a.nombre + " · " + a.codigo;
+    var perms = PERMS[state.role];
+    var st = activoStats(codigo);
+    var kpis = [
+      {lbl:"Galpón / ubicación", val:a.galpon, sub:a.ubicacion||"—"},
+      {lbl:"OT registradas", val:st.total, sub:st.abiertas+" abiertas"},
+      {lbl:"Horas de parada", val:fmtH(st.horas)+" h", sub:"acumuladas"}
+    ];
+    if(perms.seeCostos){
+      kpis.push({lbl:"Costo en OS", val:"S/ "+fmtH(st.costo), sub:st.cantidadOS+" orden(es) de servicio"});
+    }
+    document.getElementById("fichaKpis").innerHTML = kpis.map(function(c){
+      return '<div class="kpi"><div class="lbl">'+esc(c.lbl)+'</div><div class="val">'+esc(c.val)+'</div><div class="delta">'+esc(c.sub)+'</div></div>';
+    }).join("");
+    renderFichaPlaca(a.placa);
+    var otsOrdenadas = st.ots.slice().sort(function(x,y){ return (y.creadoEn||"").localeCompare(x.creadoEn||""); });
+    document.getElementById("tbodyFichaOT").innerHTML = otsOrdenadas.length ? otsOrdenadas.map(function(o){
+      var fotos = (o.fotoFallaId ? '<a href="'+blobSrc(o.fotoFallaId)+'" target="_blank" rel="noopener">falla</a>' : '') +
+        (o.fotoFallaId && o.fotoCierreId ? " · " : "") +
+        (o.fotoCierreId ? '<a href="'+blobSrc(o.fotoCierreId)+'" target="_blank" rel="noopener">cierre</a>' : '') || "—";
+      return "<tr><td class='mono'>"+esc(o.numero)+"</td><td>"+esc(o.fecha)+"</td><td>"+esc(o.descripcion)+"</td><td>"+esc(o.tecnico)+
+        "</td><td><span class='pill "+statusPillClass(o.estado)+"'>"+esc(o.estado)+"</span></td><td style='font-size:11px'>"+fotos+"</td></tr>";
+    }).join("") : '<tr><td colspan="6" class="empty-state">Sin OT registradas todavía para este activo.</td></tr>';
+    if(perms.seeCostos){
+      var ossOrdenadas = st.oss.slice().sort(function(x,y){ return (y.creadoEn||"").localeCompare(x.creadoEn||""); });
+      document.getElementById("tbodyFichaOS").innerHTML = ossOrdenadas.length ? ossOrdenadas.map(function(o){
+        return "<tr><td class='mono'>"+esc(o.numero)+"</td><td>"+esc(o.fecha)+"</td><td>"+esc(o.proveedor||"—")+
+          "</td><td class='mono'>"+(o.costo?fmtH(o.costo):"—")+"</td><td>"+esc(o.estado)+"</td></tr>";
+      }).join("") : '<tr><td colspan="5" class="empty-state">Sin OS registradas todavía para este activo.</td></tr>';
+    }
+  }
+
+  document.getElementById("btnFichaVolver").addEventListener("click", function(){
+    state.fichaCodigo = null;
+    try{ history.replaceState(null, "", location.pathname); }catch(e){}
+    switchView("dashboard");
+  });
+  document.getElementById("btnFichaNuevaOT").addEventListener("click", function(){
+    var a = state.activos.find(function(x){ return x.codigo===state.fichaCodigo; });
+    switchView("registrar");
+    if(a){
+      document.getElementById("f_galpon").value = a.galpon;
+      populateActivoSelect(a.codigo);
+    }
+  });
+
+  function renderAll(){
+    renderDashboard();
+    renderHistorial();
+    renderOTTable();
+    renderOSTable();
+    renderActivosTable();
+    if(state.fichaCodigo) renderFicha();
+  }
+
+  /* ---------------- boot ---------------- */
+  function attachLocalFallback(mensaje){
+    state.fallas = SEED_FALLAS_DEMO.map(function(f,i){ var c=Object.assign({id:"seed-"+i},f); return c; });
+    var banner = document.getElementById("connBanner");
+    banner.hidden = false;
+    if(mensaje) document.getElementById("connBannerMsg").innerHTML = mensaje;
+    renderAll();
+  }
+
+  /* Siembra automática, una sola vez por colección, solo si ya está vacía.
+     Así el primer día que Jahir conecta su proyecto de Firebase, el sistema
+     recupera solo el historial de fallas (40 registros) y el catálogo
+     piloto de GAP 8 (35 activos) sin que nadie tenga que cargarlos a mano. */
+  var seedIntentado = {};
+  function seedIfEmpty(coleccion, semillas, idFn){
+    if(seedIntentado[coleccion]) return;
+    seedIntentado[coleccion] = true;
+    var batch = state.db.batch();
+    semillas.forEach(function(item){
+      var ref = idFn ? state.db.collection(coleccion).doc(idFn(item)) : state.db.collection(coleccion).doc();
+      batch.set(ref, item);
+    });
+    batch.commit().catch(function(){ seedIntentado[coleccion] = false; });
+  }
+
+  function subscribeAll(){
+    state.db.collection("fallas_historicas").orderBy("fecha","desc").limit(500).onSnapshot(function(snap){
+      if(snap.empty) seedIfEmpty("fallas_historicas", SEED_FALLAS_INICIAL);
+      state.fallas = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderAll();
+    }, function(){ /* leave as-is on transient errors */ });
+
+    state.db.collection("ot").limit(500).onSnapshot(function(snap){
+      state.ot = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderAll();
+    }, function(){});
+
+    state.db.collection("os").limit(500).onSnapshot(function(snap){
+      state.os = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderAll();
+    }, function(){});
+
+    state.db.collection("activos").limit(500).onSnapshot(function(snap){
+      if(snap.empty) seedIfEmpty("activos", SEED_ACTIVOS_GAP08, function(a){ return a.codigo; });
+      state.activos = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      renderAll();
+    }, function(){});
+  }
+
+  function boot(){
+    loadPrefs();
+    populateNameSelect();
+    var activoParam = null;
+    try{ activoParam = new URLSearchParams(location.search).get("activo"); }catch(e){}
+    if(activoParam){ state.fichaCodigo = activoParam; }
+    applyRoleUI();
+    populateHistFilters();
+    populateOTFilters();
+    if(activoParam){ switchView("ficha"); renderFicha(); }
+
+    if(!FIREBASE_LISTO){
+      attachLocalFallback();
+    }else{
+      try{
+        firebase.initializeApp(FIREBASE_CONFIG);
+        state.db = firebase.firestore();
+        state.storage = firebase.storage();
+        state.connected = true;
+        document.getElementById("connBanner").hidden = true;
+        subscribeAll();
+      }catch(e){
+        attachLocalFallback('<strong>No se pudo conectar con Firebase.</strong> Revisa que el objeto FIREBASE_CONFIG del archivo esté copiado correctamente desde la consola de Firebase.');
+      }
+    }
+    renderAll();
+  }
+
+  /* ---------------- gate de acceso (código compartido) ---------------- */
+  function mostrarApp(){
+    document.getElementById("gateOverlay").style.display = "none";
+    document.getElementById("appRoot").style.display = "block";
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", boot);
+    }else{
+      boot();
+    }
+  }
+  function intentarEntrar(){
+    var val = (document.getElementById("gateInput").value || "").trim();
+    if(val === ACCESS_PIN){
+      try{ localStorage.setItem("bn_pin_ok", "1"); }catch(e){}
+      mostrarApp();
+    }else{
+      document.getElementById("gateErr").textContent = "Código incorrecto. Verifica con tu jefatura.";
+    }
+  }
+  (function initGate(){
+    var yaEntro = false;
+    try{ yaEntro = localStorage.getItem("bn_pin_ok") === "1"; }catch(e){}
+    if(yaEntro){ mostrarApp(); return; }
+    document.getElementById("gateBtn").addEventListener("click", intentarEntrar);
+    document.getElementById("gateInput").addEventListener("keydown", function(e){
+      if(e.key === "Enter") intentarEntrar();
+    });
+    document.getElementById("gateInput").focus();
+  })();
+})();
+</script>
+</body>
+</html>
