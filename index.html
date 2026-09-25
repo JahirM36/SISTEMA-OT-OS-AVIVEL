@@ -308,7 +308,7 @@
         </div>
         <div class="brand-text">
           <h1>Gestión OT y OS</h1>
-          <p>Motorreductores Niagara · Recolección de huevos · GAP 1–8</p>
+          <p>GAP 1–8 · Clasificadora OMNIA XF330 · Galpones de Levante · Servicios Generales</p>
         </div>
       </div>
       <div class="who">
@@ -359,7 +359,7 @@
       <div class="chart-grid">
         <div class="card">
           <h3>Por galpón</h3>
-          <div class="sub">GAP 1 – GAP 8</div>
+          <div class="sub">Todas las líneas registradas</div>
           <div id="chartGap"></div>
         </div>
         <div class="card">
@@ -407,12 +407,25 @@
           <input type="date" id="f_fecha" required />
         </div>
         <div class="field">
-          <label for="f_galpon">Galpón</label>
+          <label for="f_galpon">Galpón / Línea</label>
           <select id="f_galpon" required>
             <option value="">Selecciona…</option>
-            <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
-            <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+            <optgroup label="Galpones Automatizados (Tecno)">
+              <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
+              <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+            </optgroup>
+            <optgroup label="Galpones de Levante (Tecno)">
+              <option>Galpón de Levante 1</option><option>Galpón de Levante 2</option>
+            </optgroup>
+            <optgroup label="Clasificación de huevos">
+              <option>Clasificadora OMNIA XF330</option>
+            </optgroup>
+            <optgroup label="Servicios generales">
+              <option>Servicios Generales de Granja</option>
+            </optgroup>
+            <option value="__otro_galpon__">Otro / no está en la lista…</option>
           </select>
+          <input type="text" id="f_galpon_otro" placeholder="Escribe el galpón o línea" style="display:none; margin-top:8px;" />
         </div>
         <div class="field">
           <label for="f_equipo">Equipo / causa raíz</label>
@@ -509,12 +522,25 @@
             <div class="hint">Si esta OS viene de una falla ya registrada como OT aquí, selecciónala para vincularla. Si es una orden de Softcom que no pasó por una OT en este sistema (por ejemplo, ya ejecutada o histórica), déjalo así y completa galpón/equipo.</div>
           </div>
           <div class="field">
-            <label for="os_galpon">Galpón</label>
+            <label for="os_galpon">Galpón / Línea</label>
             <select id="os_galpon" required>
               <option value="">Selecciona…</option>
-              <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
-              <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+              <optgroup label="Galpones Automatizados (Tecno)">
+                <option>GAP 1</option><option>GAP 2</option><option>GAP 3</option><option>GAP 4</option>
+                <option>GAP 5</option><option>GAP 6</option><option>GAP 7</option><option>GAP 8</option>
+              </optgroup>
+              <optgroup label="Galpones de Levante (Tecno)">
+                <option>Galpón de Levante 1</option><option>Galpón de Levante 2</option>
+              </optgroup>
+              <optgroup label="Clasificación de huevos">
+                <option>Clasificadora OMNIA XF330</option>
+              </optgroup>
+              <optgroup label="Servicios generales">
+                <option>Servicios Generales de Granja</option>
+              </optgroup>
+              <option value="__otro_galpon__">Otro / no está en la lista…</option>
             </select>
+            <input type="text" id="os_galpon_otro" placeholder="Escribe el galpón o línea" style="display:none; margin-top:8px;" />
           </div>
           <div class="field">
             <label for="os_equipo">Equipo</label>
@@ -765,7 +791,12 @@
   var FIREBASE_LISTO = FIREBASE_CONFIG.apiKey !== "PEGAR_AQUI";
 
   /* ---------------- constants ---------------- */
-  var GAPS = ["GAP 1","GAP 2","GAP 3","GAP 4","GAP 5","GAP 6","GAP 7","GAP 8"];
+  /* Lista base de galpones/líneas para los filtros de Historial y Gestión de OT.
+     Se amplió el 25-09-2026 (más allá de GAP 1-8) al incorporar la Clasificadora
+     OMNIA XF330, los Galpones de Levante y Servicios Generales de Granja como
+     destinos válidos de una OT/OS, además de los GAP automatizados. */
+  var GAPS = ["GAP 1","GAP 2","GAP 3","GAP 4","GAP 5","GAP 6","GAP 7","GAP 8",
+    "Galpón de Levante 1","Galpón de Levante 2","Clasificadora OMNIA XF330","Servicios Generales de Granja"];
   var CAUSAS = ["Motor eléctrico","Reductor","Motorreductor","Mecanismo (uñas/pines)","Eléctrico","Proceso/Logística","Otro","Indeterminado (revisar)"];
   var ROLES = ["Técnico","Supervisor","Asistente","Coordinador","Jefe"];
   /* Roles con una sola persona a cargo: al cambiar el selector de Rol, el
@@ -1218,11 +1249,25 @@
     return out;
   }
 
+  /* Misma idea que causasConocidas, pero para galpón/línea: une la lista fija
+     (GAPS) con cualquier valor real que ya exista en los datos (por ejemplo un
+     "Otro" escrito a mano), para que todo quede filtrable aunque no esté en la
+     lista fija todavía. */
+  function galponesConocidos(extra){
+    var vistos = {};
+    var out = [];
+    GAPS.concat(extra || []).forEach(function(g){
+      if(g && !vistos[g]){ vistos[g] = true; out.push(g); }
+    });
+    return out;
+  }
+
   function populateHistFilters(){
     var galponSel = document.getElementById("filtroGalponHist");
     var causaSel = document.getElementById("filtroCausaHist");
     var causas = causasConocidas(state.fallas.map(function(f){ return f.categoria; }));
-    galponSel.innerHTML = '<option value="">Todos los galpones</option>' + GAPS.map(function(g){ return '<option>'+g+'</option>'; }).join("");
+    var galpones = galponesConocidos(state.fallas.map(function(f){ return f.galpon; }));
+    galponSel.innerHTML = '<option value="">Todos los galpones</option>' + galpones.map(function(g){ return '<option>'+esc(g)+'</option>'; }).join("");
     causaSel.innerHTML = '<option value="">Todas las causas</option>' + causas.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join("");
   }
   function renderHistorial(){
@@ -1250,7 +1295,8 @@
     var g = document.getElementById("filtroGalponOT");
     var e = document.getElementById("filtroEquipoOT");
     var equipos = causasConocidas(state.ot.map(function(o){ return o.equipo; }));
-    g.innerHTML = '<option value="">Todos los galpones</option>' + GAPS.map(function(x){ return '<option>'+x+'</option>'; }).join("");
+    var galpones = galponesConocidos(state.ot.map(function(o){ return o.galpon; }));
+    g.innerHTML = '<option value="">Todos los galpones</option>' + galpones.map(function(x){ return '<option>'+esc(x)+'</option>'; }).join("");
     e.innerHTML = '<option value="">Todos los equipos</option>' + equipos.map(function(x){ return '<option>'+esc(x)+'</option>'; }).join("");
   }
   function populateActivoSelect(presetCodigo){
@@ -1263,9 +1309,54 @@
       }).join("");
     if(current) sel.value = current;
   }
+  /* Igual que a_galpon en "Activos y QR": el selector de Galpón/Línea de OT y OS
+     tiene una opción "Otro" con un campo de texto libre al lado, para poder
+     registrar una OT/OS sobre una línea que todavía no esté en la lista fija
+     (ej. una granja o molino nuevo). galponSeleccionado() devuelve el valor final
+     (de la lista, o lo escrito a mano); setGalponSelect() lo hace al revés: pone
+     el selector en el valor de un activo/OT ya guardado, aunque ese valor no esté
+     en la lista fija (en ese caso, selecciona "Otro" y llena el texto libre). */
+  function galponSeleccionado(selectId, otroId){
+    var sel = document.getElementById(selectId).value;
+    if(sel === "__otro_galpon__"){
+      return document.getElementById(otroId).value.trim();
+    }
+    return sel;
+  }
+  function setGalponSelect(selectId, otroId, valor){
+    var sel = document.getElementById(selectId);
+    var otro = document.getElementById(otroId);
+    if(!valor){ return; }
+    var coincide = Array.from(sel.options).some(function(o){ return o.value === valor; });
+    if(coincide){
+      sel.value = valor;
+      otro.style.display = "none";
+      otro.value = "";
+    }else{
+      sel.value = "__otro_galpon__";
+      otro.style.display = "";
+      otro.value = valor;
+    }
+  }
+  function wireGalponOtro(selectId, otroId){
+    document.getElementById(selectId).addEventListener("change", function(e){
+      var otro = document.getElementById(otroId);
+      if(e.target.value === "__otro_galpon__"){
+        otro.style.display = "";
+        otro.value = "";
+        otro.focus();
+      }else{
+        otro.style.display = "none";
+        otro.value = "";
+      }
+    });
+  }
+  wireGalponOtro("f_galpon", "f_galpon_otro");
+  wireGalponOtro("os_galpon", "os_galpon_otro");
+
   document.getElementById("f_activo").addEventListener("change", function(e){
     var a = state.activos.find(function(x){ return x.codigo===e.target.value; });
-    if(a) document.getElementById("f_galpon").value = a.galpon;
+    if(a) setGalponSelect("f_galpon", "f_galpon_otro", a.galpon);
   });
   document.getElementById("f_fecha").value = todayISO();
   document.getElementById("filtroGalponOT").addEventListener("change", renderOTTable);
@@ -1297,8 +1388,13 @@
     var submitBtn = ev.target.querySelector('button[type="submit"]');
     var fotoFile = document.getElementById("f_foto_falla").files[0] || null;
     var equipoVal = equipoSeleccionado();
+    var galponVal = galponSeleccionado("f_galpon", "f_galpon_otro");
     if(document.getElementById("f_equipo").value === "__otro__" && !equipoVal){
       toast("Escribe el equipo o causa antes de guardar.");
+      return;
+    }
+    if(document.getElementById("f_galpon").value === "__otro_galpon__" && !galponVal){
+      toast("Escribe el galpón o línea antes de guardar.");
       return;
     }
     if(submitBtn) submitBtn.disabled = true;
@@ -1306,7 +1402,7 @@
       var data = {
         numero: "OT-"+uid(),
         fecha: document.getElementById("f_fecha").value || todayISO(),
-        galpon: document.getElementById("f_galpon").value,
+        galpon: galponVal,
         equipo: equipoVal,
         detalleEquipo: document.getElementById("f_detalle").value.trim(),
         activoCodigo: document.getElementById("f_activo").value || null,
@@ -1336,6 +1432,9 @@
     var otro = document.getElementById("f_equipo_otro");
     otro.style.display = "none";
     otro.value = "";
+    var otroGalpon = document.getElementById("f_galpon_otro");
+    otroGalpon.style.display = "none";
+    otroGalpon.value = "";
   }
 
   function createOT(data, submitBtn){
@@ -1457,7 +1556,7 @@
   document.getElementById("os_ot").addEventListener("change", function(e){
     var ot = state.ot.find(function(o){ return o.id===e.target.value; });
     if(ot){
-      document.getElementById("os_galpon").value = ot.galpon;
+      setGalponSelect("os_galpon", "os_galpon_otro", ot.galpon);
       var eqSel = document.getElementById("os_equipo");
       if(Array.from(eqSel.options).some(function(o){ return o.value===ot.equipo; })){
         eqSel.value = ot.equipo;
@@ -1468,7 +1567,7 @@
     ev.preventDefault();
     var otId = document.getElementById("os_ot").value;
     var ot = otId ? state.ot.find(function(o){ return o.id===otId; }) : null;
-    var galpon = document.getElementById("os_galpon").value;
+    var galpon = galponSeleccionado("os_galpon", "os_galpon_otro");
     var equipo = document.getElementById("os_equipo").value;
     if(!galpon || !equipo){ toast("Selecciona galpón y equipo."); return; }
     var data = {
@@ -1489,6 +1588,12 @@
     createOS(data, ot);
   });
 
+  function resetOSGalponOtroUI(){
+    var otro = document.getElementById("os_galpon_otro");
+    otro.style.display = "none";
+    otro.value = "";
+  }
+
   function createOS(data, ot){
     function afterCreate(osId){
       if(!ot) return;
@@ -1505,6 +1610,7 @@
         toast("OS "+data.numero+" registrada");
         document.getElementById("formOS").reset();
         document.getElementById("os_fecha").value = todayISO();
+        resetOSGalponOtroUI();
       }).catch(function(){ toast("No se pudo registrar la OS"); });
     }else{
       data.id = "local-os-"+Date.now();
@@ -1513,6 +1619,7 @@
       toast("OS "+data.numero+" registrada (modo local)");
       document.getElementById("formOS").reset();
       document.getElementById("os_fecha").value = todayISO();
+      resetOSGalponOtroUI();
       renderAll();
     }
   }
@@ -1804,7 +1911,7 @@
     var a = state.activos.find(function(x){ return x.codigo===state.fichaCodigo; });
     switchView("registrar");
     if(a){
-      document.getElementById("f_galpon").value = a.galpon;
+      setGalponSelect("f_galpon", "f_galpon_otro", a.galpon);
       populateActivoSelect(a.codigo);
     }
   });
